@@ -52,7 +52,9 @@ async function init() {
 
   document.getElementById('login-btn').addEventListener('click', () => {
     localStorage.setItem('oauth_pending', '1');
-    window.location.href = `${loginUrl()}?from=${encodeURIComponent(window.location.origin)}`;
+    // Strip /login/ (and anything after) to get the app base path
+    const base = window.location.origin + window.location.pathname.replace(/\/login\/.*$/, '');
+    window.location.href = `${loginUrl()}?from=${encodeURIComponent(base)}`;
   });
 }
 
