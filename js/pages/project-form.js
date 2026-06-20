@@ -84,10 +84,10 @@ async function init() {
     try {
       if (isEdit) {
         await updateProject(id, data);
-        window.location.href = `/OSSupply/project-detail/?id=${id}`;
+        window.location.href = `/project-detail/?id=${id}`;
       } else {
         const { project } = await createProject(data);
-        window.location.href = `/OSSupply/project-detail/?id=${project.id}`;
+        window.location.href = `/project-detail/?id=${project.id}`;
       }
     } catch (err) {
       errEl.innerHTML = `<div class="alert alert-error">${h(err.message)}</div>`;

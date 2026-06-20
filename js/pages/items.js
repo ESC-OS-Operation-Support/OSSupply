@@ -14,7 +14,7 @@ async function init() {
     if (list.length === 0) return '<p class="empty-text">ไม่พบอุปกรณ์</p>';
     return `<div class="items-grid">
       ${list.map(item => `
-        <a href="/OSSupply/item-detail/?id=${h(item.id)}" class="item-card">
+        <a href="/item-detail/?id=${h(item.id)}" class="item-card">
           ${item.image_r2_key
             ? `<img src="${photoUrl(item.image_r2_key)}" alt="${h(item.name)}" class="item-card-img">`
             : `<div class="item-card-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>`}

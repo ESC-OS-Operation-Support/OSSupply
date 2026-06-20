@@ -30,7 +30,7 @@ async function init() {
                 <div style="flex:1">
                   <div class="info-row">
                     <span class="info-label">คำขอ:</span>
-                    <a href="/OSSupply/request-detail/?id=${h(r.borrow_request_id)}" style="color:var(--primary)">
+                    <a href="/request-detail/?id=${h(r.borrow_request_id)}" style="color:var(--primary)">
                       #${h(r.borrow_request_id.slice(0, 8))}
                     </a>
                   </div>
@@ -46,7 +46,7 @@ async function init() {
                   ${r.admin_note ? `<div class="info-row"><span class="info-label">หมายเหตุเจ้าหน้าที่:</span>${h(r.admin_note)}</div>` : ''}
                 </div>
                 <div class="actions-bar" style="flex-direction:column;align-items:flex-start;gap:.5rem">
-                  <a href="/OSSupply/request-detail/?id=${h(r.borrow_request_id)}" class="btn btn-outline-primary btn-sm">ดูคำขอ</a>
+                  <a href="/request-detail/?id=${h(r.borrow_request_id)}" class="btn btn-outline-primary btn-sm">ดูคำขอ</a>
                   ${r.status === 'pending' ? `
                     <button class="btn btn-success btn-sm do-confirm" data-id="${h(r.id)}">ยืนยันการคืน</button>
                     <div style="display:flex;flex-direction:column;gap:.3rem;width:100%">

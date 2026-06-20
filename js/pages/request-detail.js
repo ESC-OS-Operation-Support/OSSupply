@@ -14,7 +14,7 @@ async function init() {
   if (!user) return;
 
   const id = new URLSearchParams(window.location.search).get('id');
-  if (!id) { window.location.href = '/OSSupply/requests/'; return; }
+  if (!id) { window.location.href = '/requests/'; return; }
 
   const app = document.getElementById('app');
 
@@ -133,7 +133,7 @@ async function init() {
       <div class="card">
         <div class="card-title">ข้อมูลคำขอ</div>
         <div class="req-info-grid">
-          ${request.project_name ? `<div class="info-row"><span class="info-label">โครงการ</span><a href="/OSSupply/project-detail/?id=${h(request.project_id)}" style="color:var(--primary)">${h(request.project_name)}</a></div>` : ''}
+          ${request.project_name ? `<div class="info-row"><span class="info-label">โครงการ</span><a href="/project-detail/?id=${h(request.project_id)}" style="color:var(--primary)">${h(request.project_name)}</a></div>` : ''}
           <div class="info-row"><span class="info-label">วันที่รับที่ขอ</span><span>${formatDateTime(request.requested_pickup_datetime)}</span></div>
           ${request.confirmed_pickup_datetime ? `<div class="info-row"><span class="info-label">วันที่รับยืนยัน</span><span>${formatDateTime(request.confirmed_pickup_datetime)}</span></div>` : ''}
           <div class="info-row"><span class="info-label">วันที่คืน</span><span>${formatDateTime(request.requested_return_datetime)}</span></div>

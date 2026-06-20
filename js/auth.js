@@ -3,7 +3,7 @@ import { renderNavbar } from './ui.js';
 
 function redirectToLogin() {
   const error = new URLSearchParams(window.location.search).get('error');
-  window.location.href = error ? `/OSSupply/login/?error=${encodeURIComponent(error)}` : '/OSSupply/login/';
+  window.location.href = error ? `/login/?error=${encodeURIComponent(error)}` : '/login/';
 }
 
 export async function requireAuth(roles = null) {
@@ -20,13 +20,13 @@ export async function requireAuth(roles = null) {
     return null;
   }
   if (roles && !roles.includes(user.role)) {
-    window.location.href = '/OSSupply/dashboard/';
+    window.location.href = '/dashboard/';
     return null;
   }
 
-  // First-login: prompt profile completion (skip when already on /OSSupply/profile/)
-  if (user.nickname === null && !window.location.pathname.startsWith('/OSSupply/profile/')) {
-    window.location.href = '/OSSupply/profile/?first=1';
+  // First-login: prompt profile completion (skip when already on /profile/)
+  if (user.nickname === null && !window.location.pathname.startsWith('/profile/')) {
+    window.location.href = '/profile/?first=1';
     return null;
   }
 
@@ -43,7 +43,7 @@ export async function requireAuth(roles = null) {
 
   document.getElementById('nav-logout-btn')?.addEventListener('click', async () => {
     await postLogout().catch(() => {});
-    window.location.href = '/OSSupply/login/';
+    window.location.href = '/login/';
   });
 
   return user;

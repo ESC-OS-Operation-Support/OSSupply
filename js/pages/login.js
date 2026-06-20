@@ -16,14 +16,14 @@ async function init() {
 
   try {
     const { user } = await getMe();
-    if (user) { window.location.href = '/OSSupply/dashboard/'; return; }
+    if (user) { window.location.href = '/dashboard/'; return; }
   } catch {}
 
   const search = new URLSearchParams(window.location.search);
   const error  = search.get('error');
 
   // URL params take priority (specific error). Fall back to the flag for the case
-  // where Live Server drops the query string on the /login → /OSSupply/login/ redirect.
+  // where Live Server drops the query string on the /login → /login/ redirect.
   const errMsg = error
     ? (ERROR_MSGS[error] || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
     : oauthPending

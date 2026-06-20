@@ -8,7 +8,7 @@ async function init() {
 
   const app = document.getElementById('app');
   const id = new URLSearchParams(window.location.search).get('id');
-  if (!id) { window.location.href = '/OSSupply/projects/'; return; }
+  if (!id) { window.location.href = '/projects/'; return; }
 
   async function renderPage() {
     const [{ project, members }, reqData] = await Promise.all([
@@ -32,9 +32,9 @@ async function init() {
             : '<span class="badge badge-completed" style="font-size:.75rem">สิ้นสุดแล้ว</span>'}
         </div>
         <div class="actions-bar">
-          ${isActive ? `<a href="/OSSupply/new-request/?project_id=${h(id)}" class="btn btn-primary">+ สร้างคำขอยืม</a>` : ''}
+          ${isActive ? `<a href="/new-request/?project_id=${h(id)}" class="btn btn-primary">+ สร้างคำขอยืม</a>` : ''}
           ${canEdit ? `
-            <a href="/OSSupply/project-form/?id=${h(id)}" class="btn btn-secondary">แก้ไข</a>
+            <a href="/project-form/?id=${h(id)}" class="btn btn-secondary">แก้ไข</a>
             <button class="btn btn-danger" id="delete-btn">ลบ</button>` : ''}
         </div>
       </div>
@@ -57,7 +57,7 @@ async function init() {
               <div class="card-title">คำขอยืมที่เชื่อมโยง (${linked.length})</div>
               <div style="display:flex;flex-direction:column;gap:.5rem">
                 ${linked.map(r => `
-                  <a href="/OSSupply/request-detail/?id=${h(r.id)}" class="request-link-row">
+                  <a href="/request-detail/?id=${h(r.id)}" class="request-link-row">
                     <span class="mono">#${h(r.id.slice(0,8))}</span>
                     ${statusBadge(r.status)}
                     <span class="muted" style="margin-left:auto">${formatDate(r.requested_pickup_datetime)}</span>
@@ -68,7 +68,7 @@ async function init() {
               <div class="card-title">คำขอยืม</div>
               <div class="dash-empty" style="padding:1.5rem">
                 <p style="font-size:.88rem;color:var(--text-muted)">ยังไม่มีคำขอยืมสำหรับโครงการนี้</p>
-                ${isActive ? `<a href="/OSSupply/new-request/?project_id=${h(id)}" class="btn btn-primary btn-sm">สร้างคำขอยืม</a>` : ''}
+                ${isActive ? `<a href="/new-request/?project_id=${h(id)}" class="btn btn-primary btn-sm">สร้างคำขอยืม</a>` : ''}
               </div>
             </div>`}
         </div>
@@ -99,7 +99,7 @@ async function init() {
 
     document.getElementById('delete-btn')?.addEventListener('click', async () => {
       if (!confirm(`ยืนยันการลบโครงการ "${project.name}"?`)) return;
-      try { await deleteProject(id); window.location.href = '/OSSupply/projects/'; }
+      try { await deleteProject(id); window.location.href = '/projects/'; }
       catch (err) {
         document.getElementById('page-error').innerHTML = `<div class="alert alert-error">${h(err.message)}</div>`;
       }

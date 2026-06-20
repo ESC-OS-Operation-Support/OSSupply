@@ -23,7 +23,7 @@ async function init() {
           <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
         </svg>
         <p>ไม่มีคำขอยืม</p>
-        <a href="/OSSupply/new-request/" class="btn btn-primary btn-sm">สร้างคำขอ</a>
+        <a href="/new-request/" class="btn btn-primary btn-sm">สร้างคำขอ</a>
       </div>`;
     return `
       <div class="table-wrap">
@@ -33,7 +33,7 @@ async function init() {
           </thead>
           <tbody>
             ${requests.map(r => `
-              <tr style="cursor:pointer" onclick="window.location.href='/OSSupply/request-detail/?id=${h(r.id)}'">
+              <tr style="cursor:pointer" onclick="window.location.href='/request-detail/?id=${h(r.id)}'">
                 <td><span class="mono" style="color:var(--primary);font-weight:600">#${h(r.id.slice(0,8))}</span></td>
                 <td>${h(r.project_name || '-')}</td>
                 <td>${statusBadge(r.status)}</td>
@@ -54,7 +54,7 @@ async function init() {
         <select class="filter-select" id="status-filter">
           ${STATUS_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}
         </select>
-        <a href="/OSSupply/new-request/" class="btn btn-primary">+ สร้างคำขอ</a>
+        <a href="/new-request/" class="btn btn-primary">+ สร้างคำขอ</a>
       </div>
     </div>
     <div id="req-container">${renderTable(requests)}</div>`;

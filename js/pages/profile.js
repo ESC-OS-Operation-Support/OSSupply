@@ -127,7 +127,7 @@ async function init() {
     try {
       await updateMe(data);
       if (isFirst || isRequired) {
-        window.location.href = '/OSSupply/dashboard/';
+        window.location.href = '/dashboard/';
       } else {
         okEl.innerHTML = `<div class="alert alert-success" style="margin-bottom:.75rem">บันทึกข้อมูลเรียบร้อยแล้ว</div>`;
         btn.disabled = false;

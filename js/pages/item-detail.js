@@ -7,7 +7,7 @@ async function init() {
   if (!user) return;
 
   const id = new URLSearchParams(window.location.search).get('id');
-  if (!id) { window.location.href = '/OSSupply/items/'; return; }
+  if (!id) { window.location.href = '/items/'; return; }
 
   const app = document.getElementById('app');
   const { item } = await getItem(id);
@@ -39,9 +39,9 @@ async function init() {
         </div>
         <div style="padding-top:1.25rem;border-top:1px solid var(--border);margin-top:.25rem">
           ${avail
-            ? `<a href="/OSSupply/new-request/?item_id=${h(id)}" class="btn btn-primary">ยืมอุปกรณ์นี้</a>`
+            ? `<a href="/new-request/?item_id=${h(id)}" class="btn btn-primary">ยืมอุปกรณ์นี้</a>`
             : `<button class="btn btn-primary" disabled style="opacity:.45;cursor:default">ไม่มีในสต๊อก</button>`}
-          <a href="/OSSupply/items/" class="btn btn-secondary" style="margin-left:.5rem">← กลับสต๊อก</a>
+          <a href="/items/" class="btn btn-secondary" style="margin-left:.5rem">← กลับสต๊อก</a>
         </div>
       </div>
     </div>`;

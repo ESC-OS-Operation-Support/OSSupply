@@ -34,7 +34,7 @@ async function init() {
           </thead>
           <tbody>
             ${requests.map(r => `
-              <tr style="cursor:pointer" onclick="window.location.href='/OSSupply/request-detail/?id=${h(r.id)}'">
+              <tr style="cursor:pointer" onclick="window.location.href='/request-detail/?id=${h(r.id)}'">
                 <td><span class="mono" style="color:var(--primary);font-weight:600">#${h(r.id.slice(0,8))}</span></td>
                 <td>${h(r.project_name || '-')}</td>
                 <td>${h(r.requester_name || '-')}</td>

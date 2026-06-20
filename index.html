@@ -12,9 +12,9 @@
     import { getMe } from './js/api.js';
     try {
       const { user } = await getMe();
-      window.location.replace(user ? '/OSSupply/dashboard/' : '/OSSupply/login/');
+      window.location.replace(user ? '/dashboard/' : '/login/');
     } catch {
-      window.location.replace('/OSSupply/login/');
+      window.location.replace('/login/');
     }
   </script>
 </body>

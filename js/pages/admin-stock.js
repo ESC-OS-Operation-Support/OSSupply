@@ -9,7 +9,7 @@ async function init() {
   if (!user) return;
 
   const id = new URLSearchParams(window.location.search).get('id');
-  if (!id) { window.location.href = '/OSSupply/admin-items/'; return; }
+  if (!id) { window.location.href = '/admin-items/'; return; }
 
   const app = document.getElementById('app');
 

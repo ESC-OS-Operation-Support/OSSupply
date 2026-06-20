@@ -65,17 +65,17 @@ function renderFooter() {
       <div class="footer-col">
         <div class="footer-heading">เมนู</div>
         <div class="footer-links">
-          <a href="/OSSupply/dashboard/">หน้าแรก</a>
-          <a href="/OSSupply/items/">สต๊อกอุปกรณ์</a>
-          <a href="/OSSupply/requests/">คำขอยืม</a>
-          <a href="/OSSupply/projects/">โครงการ</a>
+          <a href="/dashboard/">หน้าแรก</a>
+          <a href="/items/">สต๊อกอุปกรณ์</a>
+          <a href="/requests/">คำขอยืม</a>
+          <a href="/projects/">โครงการ</a>
         </div>
       </div>
       <div class="footer-col">
         <div class="footer-heading">ข้อมูล</div>
         <div class="footer-links">
-          <a href="/OSSupply/policy/">Policy</a>
-          <a href="/OSSupply/contact/">Contact Us</a>
+          <a href="/policy/">Policy</a>
+          <a href="/contact/">Contact Us</a>
         </div>
       </div>
       <div class="footer-col">
@@ -99,41 +99,41 @@ function renderFooter() {
 export function renderNavbar(user, unread = 0) {
   const root = document.getElementById('navbar-root');
   if (!root || !user) return;
-  const seg     = '/' + (window.location.pathname.split('/').filter(Boolean)[1] || '');
+  const seg     = '/' + (window.location.pathname.split('/').filter(Boolean)[0] || '');
   const active  = (path) => seg === path ? 'active' : '';
   const isStaff = user.role === 'staff' || user.role === 'admin';
 
   root.innerHTML = `
     <nav class="nav">
       <div class="nav-inner">
-        <a href="/OSSupply/dashboard/" class="nav-brand">
+        <a href="/dashboard/" class="nav-brand">
           <img src="/public/ESC_logo.png" alt="กวศ.">
           <span class="nav-brand-name">Operation Support</span>
         </a>
         <div class="nav-links">
-          <a href="/OSSupply/dashboard/"  class="nav-link ${active('/dashboard')}">หน้าแรก</a>
-          <a href="/OSSupply/projects/"   class="nav-link ${active('/projects')}">โครงการ</a>
-          <a href="/OSSupply/items/"      class="nav-link ${active('/items')}">สต๊อก</a>
-          <a href="/OSSupply/requests/"   class="nav-link ${active('/requests')}">คำขอ</a>
-          <a href="/OSSupply/policy/"     class="nav-link ${active('/policy')}">Policy</a>
-          <a href="/OSSupply/contact/"    class="nav-link ${active('/contact')}">Contact Us</a>
+          <a href="/dashboard/"  class="nav-link ${active('/dashboard')}">หน้าแรก</a>
+          <a href="/projects/"   class="nav-link ${active('/projects')}">โครงการ</a>
+          <a href="/items/"      class="nav-link ${active('/items')}">สต๊อก</a>
+          <a href="/requests/"   class="nav-link ${active('/requests')}">คำขอ</a>
+          <a href="/policy/"     class="nav-link ${active('/policy')}">Policy</a>
+          <a href="/contact/"    class="nav-link ${active('/contact')}">Contact Us</a>
           ${isStaff ? `
             <span class="nav-divider"></span>
-            <a href="/OSSupply/admin-requests/" class="nav-link nav-link-admin ${active('/admin-requests')}">คำขอ</a>
-            <a href="/OSSupply/admin-returns/"  class="nav-link nav-link-admin ${active('/admin-returns')}">การคืน</a>
-            <a href="/OSSupply/admin-items/"    class="nav-link nav-link-admin ${active('/admin-items')}">คลัง</a>
-            ${user.role === 'admin' ? `<a href="/OSSupply/admin-users/" class="nav-link nav-link-admin ${active('/admin-users')}">ผู้ใช้</a>` : ''}
+            <a href="/admin-requests/" class="nav-link nav-link-admin ${active('/admin-requests')}">คำขอ</a>
+            <a href="/admin-returns/"  class="nav-link nav-link-admin ${active('/admin-returns')}">การคืน</a>
+            <a href="/admin-items/"    class="nav-link nav-link-admin ${active('/admin-items')}">คลัง</a>
+            ${user.role === 'admin' ? `<a href="/admin-users/" class="nav-link nav-link-admin ${active('/admin-users')}">ผู้ใช้</a>` : ''}
           ` : ''}
         </div>
         <div class="nav-right">
-          <a href="/OSSupply/notifications/" class="nav-bell${seg === '/notifications' ? ' active' : ''}" title="การแจ้งเตือน">
+          <a href="/notifications/" class="nav-bell${seg === '/notifications' ? ' active' : ''}" title="การแจ้งเตือน">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
               <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
             ${unread > 0 ? `<span class="nav-notif-dot">${unread > 99 ? '99+' : unread}</span>` : ''}
           </a>
-          <a href="/OSSupply/profile/" title="${h(user.name)}" style="text-decoration:none;flex-shrink:0">
+          <a href="/profile/" title="${h(user.name)}" style="text-decoration:none;flex-shrink:0">
             ${user.avatar_url
               ? `<img src="${h(user.avatar_url)}" alt="${h(user.name)}" class="nav-avatar">`
               : `<div class="nav-avatar-placeholder">${h(user.name.charAt(0).toUpperCase())}</div>`

@@ -23,7 +23,7 @@ async function init() {
           คำขอยืมอุปกรณ์ต้องผูกกับโครงการ<br>
           สร้างโครงการก่อนแล้วค่อยกลับมายืม
         </p>
-        <a href="/OSSupply/project-form/" class="btn btn-primary">สร้างโครงการ</a>
+        <a href="/project-form/" class="btn btn-primary">สร้างโครงการ</a>
       </div>`;
     return;
   }
@@ -117,7 +117,7 @@ async function init() {
       if (preItemId) {
         try { await addRequestItem(request.id, { item_id: preItemId, quantity_requested: 1 }); } catch {}
       }
-      window.location.href = `/OSSupply/request-detail/?id=${request.id}`;
+      window.location.href = `/request-detail/?id=${request.id}`;
     } catch (err) {
       errEl.innerHTML = `<div class="alert alert-error">${h(err.message)}</div>`;
       btn.disabled = false; btn.textContent = 'สร้างคำขอ';

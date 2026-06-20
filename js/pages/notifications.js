@@ -45,7 +45,7 @@ async function init() {
           await markNotifRead(nid).catch(() => {});
           el.classList.remove('unread');
         }
-        if (ref) window.location.href = `/OSSupply/request-detail/?id=${ref}`;
+        if (ref) window.location.href = `/request-detail/?id=${ref}`;
       });
     });
 

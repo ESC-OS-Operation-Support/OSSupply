@@ -11,7 +11,7 @@ async function req(path, opts = {}) {
     let errKey = null;
     try { const d = await res.json(); msg = d.message || d.error || msg; errKey = d.error; } catch {}
     if (res.status === 403 && errKey === 'profile_incomplete') {
-      window.location.href = '/OSSupply/profile/?required=true';
+      window.location.href = '/profile/?required=true';
       return null;
     }
     throw new Error(msg);
@@ -35,41 +35,41 @@ export const loginUrl  = ()    => `${BASE}/auth/google`;
 
 // Items
 export const getItems       = (cat)       => api.get(`/items${cat ? '?category=' + encodeURIComponent(cat) : ''}`);
-export const getItem        = (id)        => api.get(`/OSSupply/items/${id}`);
+export const getItem        = (id)        => api.get(`/items/${id}`);
 export const createItem     = (data)      => api.post('/items', data);
-export const updateItem     = (id, data)  => api.patch(`/OSSupply/items/${id}`, data);
-export const deleteItem     = (id)        => api.delete(`/OSSupply/items/${id}`);
-export const getStockLogs   = (id)        => api.get(`/OSSupply/items/${id}/stock/logs`);
-export const addStock       = (id, data)  => api.post(`/OSSupply/items/${id}/stock/add`, data);
-export const removeStock    = (id, data)  => api.post(`/OSSupply/items/${id}/stock/remove`, data);
-export const sendToRepair   = (id, data)  => api.post(`/OSSupply/items/${id}/stock/repair`, data);
-export const restoreRepair  = (id, data)  => api.post(`/OSSupply/items/${id}/stock/restore`, data);
+export const updateItem     = (id, data)  => api.patch(`/items/${id}`, data);
+export const deleteItem     = (id)        => api.delete(`/items/${id}`);
+export const getStockLogs   = (id)        => api.get(`/items/${id}/stock/logs`);
+export const addStock       = (id, data)  => api.post(`/items/${id}/stock/add`, data);
+export const removeStock    = (id, data)  => api.post(`/items/${id}/stock/remove`, data);
+export const sendToRepair   = (id, data)  => api.post(`/items/${id}/stock/repair`, data);
+export const restoreRepair  = (id, data)  => api.post(`/items/${id}/stock/restore`, data);
 
 // Projects
 export const getProjects    = ()          => api.get('/projects');
-export const getProject     = (id)        => api.get(`/OSSupply/projects/${id}`);
+export const getProject     = (id)        => api.get(`/projects/${id}`);
 export const createProject  = (data)      => api.post('/projects', data);
-export const updateProject  = (id, data)  => api.patch(`/OSSupply/projects/${id}`, data);
-export const deleteProject  = (id)        => api.delete(`/OSSupply/projects/${id}`);
+export const updateProject  = (id, data)  => api.patch(`/projects/${id}`, data);
+export const deleteProject  = (id)        => api.delete(`/projects/${id}`);
 
-export const addProjectMember    = (id, data)   => api.post(`/OSSupply/projects/${id}/members`, data);
-export const removeProjectMember = (id, userId) => api.delete(`/OSSupply/projects/${id}/members/${userId}`);
+export const addProjectMember    = (id, data)   => api.post(`/projects/${id}/members`, data);
+export const removeProjectMember = (id, userId) => api.delete(`/projects/${id}/members/${userId}`);
 
 // Requests
 export const getRequests       = (status)       => api.get(`/requests${status ? '?status=' + status : ''}`);
-export const getRequest        = (id)           => api.get(`/OSSupply/requests/${id}`);
+export const getRequest        = (id)           => api.get(`/requests/${id}`);
 export const createRequest     = (data)         => api.post('/requests', data);
-export const addRequestItem    = (id, data)     => api.post(`/OSSupply/requests/${id}/items`, data);
-export const removeRequestItem = (id, itemId)   => api.delete(`/OSSupply/requests/${id}/OSSupply/items/${itemId}`);
-export const submitRequest     = (id)           => api.post(`/OSSupply/requests/${id}/submit`);
-export const cancelRequest     = (id)           => api.patch(`/OSSupply/requests/${id}/cancel`);
-export const rejectRequest     = (id, data)     => api.patch(`/OSSupply/requests/${id}/reject`, data);
-export const processRequest    = (id, data)     => api.patch(`/OSSupply/requests/${id}/process`, data);
-export const tickItem          = (id, itemId)   => api.patch(`/OSSupply/requests/${id}/OSSupply/items/${itemId}/tick`);
-export const markReady         = (id)           => api.patch(`/OSSupply/requests/${id}/ready`);
-export const confirmPickup     = (id)           => api.patch(`/OSSupply/requests/${id}/pickup`);
-export const getRequestReturns = (id)           => api.get(`/OSSupply/requests/${id}/returns`);
-export const submitReturn      = (id, data)     => api.post(`/OSSupply/requests/${id}/returns`, data);
+export const addRequestItem    = (id, data)     => api.post(`/requests/${id}/items`, data);
+export const removeRequestItem = (id, itemId)   => api.delete(`/requests/${id}/items/${itemId}`);
+export const submitRequest     = (id)           => api.post(`/requests/${id}/submit`);
+export const cancelRequest     = (id)           => api.patch(`/requests/${id}/cancel`);
+export const rejectRequest     = (id, data)     => api.patch(`/requests/${id}/reject`, data);
+export const processRequest    = (id, data)     => api.patch(`/requests/${id}/process`, data);
+export const tickItem          = (id, itemId)   => api.patch(`/requests/${id}/items/${itemId}/tick`);
+export const markReady         = (id)           => api.patch(`/requests/${id}/ready`);
+export const confirmPickup     = (id)           => api.patch(`/requests/${id}/pickup`);
+export const getRequestReturns = (id)           => api.get(`/requests/${id}/returns`);
+export const submitReturn      = (id, data)     => api.post(`/requests/${id}/returns`, data);
 
 // Returns (admin)
 export const getAllReturns  = (status) => api.get(`/returns${status ? '?status=' + status : ''}`);
@@ -78,8 +78,8 @@ export const rejectReturn   = (id, data)  => api.patch(`/returns/${id}/reject`, 
 
 // Notifications
 export const getNotifications = (page, limit) => api.get(`/notifications?page=${page}&limit=${limit}`);
-export const markNotifRead    = (id)           => api.patch(`/OSSupply/notifications/${id}/read`);
-export const markAllRead      = ()             => api.patch('/OSSupply/notifications/read-all');
+export const markNotifRead    = (id)           => api.patch(`/notifications/${id}/read`);
+export const markAllRead      = ()             => api.patch('/notifications/read-all');
 
 // Users
 export const updateMe      = (data)      => api.patch('/users/me', data);

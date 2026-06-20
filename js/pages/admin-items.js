@@ -32,7 +32,7 @@ async function init() {
                 <td>
                   <div class="actions-bar">
                     <button class="btn btn-outline-primary btn-sm do-edit" data-id="${h(item.id)}">แก้ไข</button>
-                    <a href="/OSSupply/admin-stock/?id=${h(item.id)}" class="btn btn-secondary btn-sm" style="color:var(--info);border-color:var(--info)">สต็อก</a>
+                    <a href="/admin-stock/?id=${h(item.id)}" class="btn btn-secondary btn-sm" style="color:var(--info);border-color:var(--info)">สต็อก</a>
                     <button class="btn btn-danger btn-sm do-delete" data-id="${h(item.id)}" data-name="${h(item.name)}">ลบ</button>
                   </div>
                 </td>

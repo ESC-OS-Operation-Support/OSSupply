@@ -12,7 +12,7 @@ async function init() {
   app.innerHTML = `
     <div class="page-header">
       <h1 class="page-title">โครงการของฉัน</h1>
-      <a href="/OSSupply/project-form/" class="btn btn-primary">+ สร้างโครงการ</a>
+      <a href="/project-form/" class="btn btn-primary">+ สร้างโครงการ</a>
     </div>
     ${projects.length === 0 ? `
       <div class="card" style="max-width:560px;text-align:center;padding:3rem 2rem">
@@ -22,11 +22,11 @@ async function init() {
           ก่อนจะยืมอุปกรณ์ คุณต้องสร้างโครงการก่อน<br>
           โครงการคือกิจกรรมหรืองานที่ต้องใช้อุปกรณ์
         </p>
-        <a href="/OSSupply/project-form/" class="btn btn-primary">สร้างโครงการแรก</a>
+        <a href="/project-form/" class="btn btn-primary">สร้างโครงการแรก</a>
       </div>` : `
       <div class="project-list">
         ${projects.map(p => `
-          <a href="/OSSupply/project-detail/?id=${h(p.id)}" class="project-card">
+          <a href="/project-detail/?id=${h(p.id)}" class="project-card">
             <div>
               <div class="project-card-name">${h(p.name)}</div>
               ${p.group ? `<div class="project-card-meta">กลุ่ม ${h(p.group)}${p.in_charge_person ? ` · ${h(p.in_charge_person)}` : ''}</div>` : p.in_charge_person ? `<div class="project-card-meta">ผู้รับผิดชอบ: ${h(p.in_charge_person)}</div>` : ''}

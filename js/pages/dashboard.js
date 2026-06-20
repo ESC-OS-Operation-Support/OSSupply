@@ -27,7 +27,7 @@ async function init() {
           <div class="flow-banner-title">มีอุปกรณ์ที่เกินกำหนดคืน</div>
           <div class="flow-banner-desc">กรุณาส่งคืนอุปกรณ์โดยด่วน มิฉะนั้นอาจมีผลต่อสิทธิ์การยืมในอนาคต</div>
         </div>
-        <a href="/OSSupply/requests/?status=overdue" class="btn btn-sm" style="background:#fff;color:var(--error);border:1.5px solid var(--error)">ดูคำขอ</a>
+        <a href="/requests/?status=overdue" class="btn btn-sm" style="background:#fff;color:var(--error);border:1.5px solid var(--error)">ดูคำขอ</a>
       </div>`;
   } else if (readyItems.length > 0) {
     banner = `
@@ -39,7 +39,7 @@ async function init() {
           <div class="flow-banner-title">อุปกรณ์พร้อมให้รับ${readyItems.length > 1 ? ` (${readyItems.length} รายการ)` : ''}</div>
           <div class="flow-banner-desc">ไปรับอุปกรณ์ได้เลย ก่อนหมดเวลา 7 วัน</div>
         </div>
-        <a href="/OSSupply/request-detail/?id=${h(readyItems[0].id)}" class="btn btn-sm" style="background:#fff;color:var(--success);border:1.5px solid var(--success)">ดูคำขอ</a>
+        <a href="/request-detail/?id=${h(readyItems[0].id)}" class="btn btn-sm" style="background:#fff;color:var(--success);border:1.5px solid var(--success)">ดูคำขอ</a>
       </div>`;
   } else if (draftItems.length > 0) {
     banner = `
@@ -51,7 +51,7 @@ async function init() {
           <div class="flow-banner-title">มีคำขอที่ยังเป็นร่าง${draftItems.length > 1 ? ` (${draftItems.length} รายการ)` : ''}</div>
           <div class="flow-banner-desc">เพิ่มอุปกรณ์และส่งคำขอเพื่อดำเนินการต่อ</div>
         </div>
-        <a href="/OSSupply/request-detail/?id=${h(draftItems[0].id)}" class="btn btn-sm" style="background:#fff;color:var(--warning);border:1.5px solid #fde3b4">ดำเนินการต่อ</a>
+        <a href="/request-detail/?id=${h(draftItems[0].id)}" class="btn btn-sm" style="background:#fff;color:var(--warning);border:1.5px solid #fde3b4">ดำเนินการต่อ</a>
       </div>`;
   }
 
@@ -62,7 +62,7 @@ async function init() {
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
         </svg>
         <p>ยังไม่มีโครงการ</p>
-        <a href="/OSSupply/project-form/" class="btn btn-primary btn-sm">+ สร้างโครงการ</a>
+        <a href="/project-form/" class="btn btn-primary btn-sm">+ สร้างโครงการ</a>
       </div>`
     : `<div class="project-list">
         ${projects.map(p => {
@@ -72,7 +72,7 @@ async function init() {
           const activeCount       = projectRequests.length;
 
           return `
-            <a href="/OSSupply/project-detail/?id=${h(p.id)}" class="project-card">
+            <a href="/project-detail/?id=${h(p.id)}" class="project-card">
               <div style="flex:1;min-width:0">
                 <div class="project-card-name">${h(p.name)}</div>
                 <div class="project-card-meta">
@@ -102,7 +102,7 @@ async function init() {
         <p class="dash-sub">${greeting}</p>
         <h1 class="dash-greeting">${h(user.name)}</h1>
       </div>
-      <a href="/OSSupply/project-form/" class="btn btn-primary">+ สร้างโครงการ</a>
+      <a href="/project-form/" class="btn btn-primary">+ สร้างโครงการ</a>
     </div>
 
     ${banner}
