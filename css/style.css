@@ -1049,7 +1049,7 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 
   /* Footer: hide columns, keep only copyright bar */
   .footer-inner { display: none; }
-  .footer-bottom { max-width: none; padding: .75rem 1.5rem; }
+  .footer-bottom { max-width: none; padding: .35rem 1.5rem; font-size: .78rem; }
 }
 
 /* =====================================================
