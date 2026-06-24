@@ -30,20 +30,36 @@ async function init() {
 
   function renderForm(selectedProjectId = '') {
     const sel = projects.find(p => p.id === selectedProjectId);
+    const locked = Boolean(preProject && selectedProjectId === preProject);
+
+    const projectField = locked
+      ? `<div class="form-group">
+           <label class="form-label">โครงการ</label>
+           <div class="form-input" style="background:var(--bg);color:var(--text-muted);cursor:default">
+             ${h(sel?.name ?? '')} (${formatDate(sel?.start_date)} – ${formatDate(sel?.end_date)})
+           </div>
+           <input type="hidden" name="project_id" value="${h(selectedProjectId)}">
+         </div>`
+      : `<div class="form-group">
+           <label class="form-label">โครงการ <span class="form-required">*</span></label>
+           <select class="form-select" name="project_id" id="project-select" required>
+             <option value="">-- เลือกโครงการ --</option>
+             ${projects.map(p => `
+               <option value="${h(p.id)}"
+                 data-start="${h(p.start_date)}" data-end="${h(p.end_date)}"
+                 ${p.id === selectedProjectId ? 'selected' : ''}>
+                 ${h(p.name)} (${formatDate(p.start_date)} – ${formatDate(p.end_date)})
+               </option>`).join('')}
+           </select>
+           ${sel ? `<span class="form-hint">ช่วงโครงการ: ${formatDate(sel.start_date)} → ${formatDate(sel.end_date)}</span>` : ''}
+         </div>`;
+
     return `
       <div class="form-group">
-        <label class="form-label">โครงการ <span class="form-required">*</span></label>
-        <select class="form-select" name="project_id" id="project-select" required>
-          <option value="">-- เลือกโครงการ --</option>
-          ${projects.map(p => `
-            <option value="${h(p.id)}"
-              data-start="${h(p.start_date)}" data-end="${h(p.end_date)}"
-              ${p.id === selectedProjectId ? 'selected' : ''}>
-              ${h(p.name)} (${formatDate(p.start_date)} – ${formatDate(p.end_date)})
-            </option>`).join('')}
-        </select>
-        ${sel ? `<span class="form-hint">ช่วงโครงการ: ${formatDate(sel.start_date)} → ${formatDate(sel.end_date)}</span>` : ''}
+        <label class="form-label">ชื่อคำขอ <span class="form-required">*</span></label>
+        <input class="form-input" name="name" required placeholder="เช่น ยืมอุปกรณ์สำหรับกิจกรรม..." autocomplete="off">
       </div>
+      ${projectField}
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">วันที่รับ <span class="form-required">*</span></label>
@@ -113,7 +129,7 @@ async function init() {
 
     btn.disabled = true; btn.textContent = 'กำลังสร้าง...';
     try {
-      const { request } = await createRequest({ project_id: projectId, requested_pickup_datetime: pickup, requested_return_datetime: ret });
+      const { request } = await createRequest({ name: fd.get('name'), project_id: projectId, requested_pickup_datetime: pickup, requested_return_datetime: ret });
       if (preItemId) {
         try { await addRequestItem(request.id, { item_id: preItemId, quantity_requested: 1 }); } catch {}
       }
