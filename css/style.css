@@ -1096,6 +1096,34 @@ body { display: flex; flex-direction: column; min-height: 100vh; }
 }
 
 /* =====================================================
+   SEARCH DROPDOWN (user search, item search)
+   ===================================================== */
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 2px); left: 0; right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+  z-index: 200;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.search-dropdown-item {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .55rem .75rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+  font-size: .875rem;
+}
+.search-dropdown-item:last-child { border-bottom: none; }
+.search-dropdown-item:hover, .search-dropdown-item:focus { background: var(--bg); outline: none; }
+.search-dropdown-empty {
+  padding: .75rem; color: var(--text-muted); font-size: .85rem; text-align: center;
+}
+
+/* =====================================================
    SEARCH INPUT
    ===================================================== */
 .search-input {

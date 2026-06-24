@@ -62,6 +62,7 @@ export const deleteProject  = (id)        => api.delete(`/projects/${id}`);
 
 export const addProjectMember    = (id, data)   => api.post(`/projects/${id}/members`, data);
 export const removeProjectMember = (id, userId) => api.delete(`/projects/${id}/members/${userId}`);
+export const searchUsers         = (q)          => api.get(`/users/search?q=${encodeURIComponent(q)}`);
 
 // Requests
 export const getRequests       = (status)       => api.get(`/requests${status ? '?status=' + status : ''}`);

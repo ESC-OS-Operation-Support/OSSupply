@@ -1,5 +1,5 @@
 import { requireAuth } from '../auth.js';
-import { getProject, deleteProject, getRequests, addProjectMember, removeProjectMember } from '../api.js';
+import { getProject, deleteProject, getRequests, addProjectMember, removeProjectMember, searchUsers } from '../api.js';
 import { h, statusBadge, formatDate, openModal, projectStatusBadge } from '../ui.js';
 
 async function init() {
@@ -113,32 +113,91 @@ async function init() {
     });
 
     document.getElementById('add-member-btn')?.addEventListener('click', () => {
+      let selectedUser = null;
+      let debounceTimer;
+
       const close = openModal('เพิ่มสมาชิก', `
         <div id="member-modal-error"></div>
         <div class="form">
-          <div class="form-group">
-            <label class="form-label">อีเมล <span class="form-required">*</span></label>
-            <input class="form-input" id="member-email" type="email" placeholder="example@chula.ac.th" autofocus>
+          <div class="form-group" style="position:relative">
+            <label class="form-label">ค้นหา (ชื่อ, อีเมล หรือรหัสนักศึกษา)</label>
+            <input class="form-input" id="member-search" placeholder="เช่น 65090045 หรือ beam..." autofocus autocomplete="off">
+            <div id="member-results" class="search-dropdown" style="display:none"></div>
           </div>
+          <div id="member-selected-box" style="display:none;margin-top:.35rem"></div>
           <div class="form-actions">
-            <button class="btn btn-primary" id="do-add-member-btn">เพิ่ม</button>
+            <button class="btn btn-primary" id="do-add-member-btn" disabled>เพิ่ม</button>
             <button class="btn btn-secondary" id="cancel-member-btn">ยกเลิก</button>
           </div>
         </div>`);
 
+      const searchInput = document.getElementById('member-search');
+      const resultsBox  = document.getElementById('member-results');
+      const selectedBox = document.getElementById('member-selected-box');
+      const addBtn      = document.getElementById('do-add-member-btn');
+      const errorBox    = document.getElementById('member-modal-error');
+
+      function pickUser(u) {
+        selectedUser = u;
+        resultsBox.style.display = 'none';
+        searchInput.value = u.name;
+        selectedBox.style.display = 'block';
+        selectedBox.innerHTML = `
+          <div style="display:flex;align-items:center;gap:.6rem;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:.5rem .75rem">
+            ${u.avatar_url
+              ? `<img src="${h(u.avatar_url)}" class="member-avatar" alt="${h(u.name)}">`
+              : `<div class="member-avatar-ph">${h(u.name.charAt(0))}</div>`}
+            <div>
+              <div style="font-weight:600;font-size:.88rem">${h(u.name)}</div>
+              <div style="font-size:.75rem;color:var(--text-muted)">${h(u.email)}</div>
+            </div>
+          </div>`;
+        addBtn.disabled = false;
+      }
+
+      searchInput.addEventListener('input', () => {
+        selectedUser = null;
+        addBtn.disabled = true;
+        selectedBox.style.display = 'none';
+        clearTimeout(debounceTimer);
+        const q = searchInput.value.trim();
+        if (q.length < 2) { resultsBox.style.display = 'none'; return; }
+        debounceTimer = setTimeout(async () => {
+          try {
+            const { users } = await searchUsers(q);
+            resultsBox.innerHTML = users.length === 0
+              ? `<div class="search-dropdown-empty">ไม่พบผู้ใช้</div>`
+              : users.map((u, i) => `
+                  <div class="search-dropdown-item" data-idx="${i}">
+                    ${u.avatar_url
+                      ? `<img src="${h(u.avatar_url)}" class="member-avatar" alt="${h(u.name)}">`
+                      : `<div class="member-avatar-ph">${h(u.name.charAt(0))}</div>`}
+                    <div>
+                      <div style="font-weight:600">${h(u.name)}</div>
+                      <div style="font-size:.75rem;color:var(--text-muted)">${h(u.email)}</div>
+                    </div>
+                  </div>`).join('');
+            resultsBox.querySelectorAll('.search-dropdown-item').forEach(el => {
+              el.addEventListener('mousedown', (e) => { e.preventDefault(); pickUser(users[+el.dataset.idx]); });
+            });
+            resultsBox.style.display = 'block';
+          } catch {}
+        }, 300);
+      });
+
+      searchInput.addEventListener('blur', () => setTimeout(() => { resultsBox.style.display = 'none'; }, 150));
+
       document.getElementById('cancel-member-btn').addEventListener('click', close);
-      document.getElementById('do-add-member-btn').addEventListener('click', async () => {
-        const email = document.getElementById('member-email').value.trim();
-        if (!email) return;
-        const btn = document.getElementById('do-add-member-btn');
-        btn.disabled = true; btn.textContent = 'กำลังเพิ่ม...';
+      addBtn.addEventListener('click', async () => {
+        if (!selectedUser) return;
+        addBtn.disabled = true; addBtn.textContent = 'กำลังเพิ่ม...';
         try {
-          await addProjectMember(id, { email });
+          await addProjectMember(id, { email: selectedUser.email });
           close();
           await renderPage();
         } catch (err) {
-          document.getElementById('member-modal-error').innerHTML = `<div class="alert alert-error">${h(err.message)}</div>`;
-          btn.disabled = false; btn.textContent = 'เพิ่ม';
+          errorBox.innerHTML = `<div class="alert alert-error">${h(err.message)}</div>`;
+          addBtn.disabled = false; addBtn.textContent = 'เพิ่ม';
         }
       });
     });

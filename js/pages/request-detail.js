@@ -150,11 +150,12 @@ async function init() {
 
         ${isOwner && status === 'draft' ? `
           <div class="add-item-row" id="add-item-section">
-            <select class="add-item-select" id="add-item-select">
-              <option value="">-- เลือกอุปกรณ์ --</option>
-            </select>
+            <div style="position:relative;flex:1;min-width:0">
+              <input class="form-input" id="add-item-search" placeholder="ค้นหาอุปกรณ์..." autocomplete="off" style="margin:0">
+              <div id="item-search-results" class="search-dropdown" style="display:none"></div>
+            </div>
             <input type="number" class="add-item-qty" id="add-item-qty" min="1" value="1">
-            <button class="btn btn-primary btn-sm" id="btn-add-item">+ เพิ่ม</button>
+            <button class="btn btn-primary btn-sm" id="btn-add-item" disabled>+ เพิ่ม</button>
           </div>
           <div id="add-warnings"></div>` : ''}
 
@@ -220,23 +221,56 @@ async function init() {
     }
 
     if (isOwner && status === 'draft') {
-      getItems().then(({ items: all }) => {
-        const sel = document.getElementById('add-item-select');
-        if (!sel) return;
-        all.filter(i => i.is_active === 1 && i.available_quantity > 0).forEach(i => {
-          const opt = document.createElement('option');
-          opt.value = i.id;
-          opt.textContent = `${i.name} (พร้อม: ${i.available_quantity})`;
-          sel.appendChild(opt);
-        });
+      let selectedItem = null;
+      let itemDebounce;
+
+      const itemSearch  = document.getElementById('add-item-search');
+      const itemResults = document.getElementById('item-search-results');
+      const addBtn      = document.getElementById('btn-add-item');
+
+      itemSearch.addEventListener('input', () => {
+        selectedItem = null;
+        addBtn.disabled = true;
+        clearTimeout(itemDebounce);
+        const q = itemSearch.value.trim();
+        if (q.length < 2) { itemResults.style.display = 'none'; return; }
+        itemDebounce = setTimeout(async () => {
+          try {
+            const { items: found } = await getItems({ search: q, limit: 10 });
+            const avail = found.filter(i => i.is_active === 1 && i.available_quantity > 0);
+            itemResults.innerHTML = avail.length === 0
+              ? `<div class="search-dropdown-empty">ไม่พบอุปกรณ์</div>`
+              : avail.map((i, idx) => `
+                  <div class="search-dropdown-item" data-idx="${idx}">
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600">${h(i.name)}</div>
+                      <div style="font-size:.75rem;color:var(--text-muted)">
+                        ${h(i.category || '')}${i.category ? ' · ' : ''}พร้อมใช้ ${i.available_quantity}${i.unit ? ' ' + h(i.unit) : ''}
+                      </div>
+                    </div>
+                  </div>`).join('');
+            itemResults.querySelectorAll('.search-dropdown-item').forEach(el => {
+              el.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                selectedItem = avail[+el.dataset.idx];
+                itemSearch.value = selectedItem.name;
+                itemResults.style.display = 'none';
+                addBtn.disabled = false;
+                document.getElementById('add-item-qty').max = selectedItem.available_quantity;
+              });
+            });
+            itemResults.style.display = 'block';
+          } catch {}
+        }, 300);
       });
 
-      document.getElementById('btn-add-item').addEventListener('click', async () => {
-        const itemId = document.getElementById('add-item-select').value;
-        const qty    = parseInt(document.getElementById('add-item-qty').value);
-        if (!itemId) return;
+      itemSearch.addEventListener('blur', () => setTimeout(() => { itemResults.style.display = 'none'; }, 150));
+
+      addBtn.addEventListener('click', async () => {
+        if (!selectedItem) return;
+        const qty = parseInt(document.getElementById('add-item-qty').value);
         try {
-          const { warnings } = await addRequestItem(id, { item_id: itemId, quantity_requested: qty });
+          const { warnings } = await addRequestItem(id, { item_id: selectedItem.id, quantity_requested: qty });
           if (warnings?.length) {
             document.getElementById('add-warnings').innerHTML =
               warnings.map(w => `<div class="alert alert-warning">⚠ ${h(w)}</div>`).join('');
