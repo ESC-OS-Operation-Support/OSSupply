@@ -55,9 +55,11 @@ async function init() {
               <div style="display:flex;flex-direction:column;gap:.5rem">
                 ${linked.map(r => `
                   <a href="/request-detail/?id=${h(r.id)}" class="request-link-row">
-                    <span class="mono">#${h(r.id.slice(0,8))}</span>
+                    <span style="font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                      ${r.name ? h(r.name) : `<span class="mono">#${h(r.id.slice(0,8))}</span>`}
+                    </span>
                     ${statusBadge(r.status)}
-                    <span class="muted" style="margin-left:auto">${formatDate(r.requested_pickup_datetime)}</span>
+                    <span class="muted" style="white-space:nowrap;flex-shrink:0">${formatDate(r.requested_pickup_datetime)}</span>
                   </a>`).join('')}
               </div>
             </div>` : `
