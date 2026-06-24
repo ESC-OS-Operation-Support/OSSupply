@@ -13,6 +13,18 @@ export function statusBadge(status) {
   return `<span class="badge badge-${h(status)}">${h(STATUS_LABELS[status] || status)}</span>`;
 }
 
+// Project status badge
+const PROJECT_STATUS_MAP = {
+  active:   ['badge-ready_for_pickup', 'กำลังดำเนินการ'],
+  upcoming: ['badge-processing',       'กำลังจะมาถึง'],
+  ended:    ['badge-cancelled',        'สิ้นสุดแล้ว'],
+  archived: ['badge-draft',            'เก็บถาวร'],
+};
+export function projectStatusBadge(status) {
+  const [cls, label] = PROJECT_STATUS_MAP[status] ?? ['badge-draft', status];
+  return `<span class="badge ${h(cls)}">${label}</span>`;
+}
+
 // Date formatting
 export function formatDate(iso) {
   if (!iso) return '-';

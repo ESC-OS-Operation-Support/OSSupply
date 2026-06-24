@@ -1,6 +1,6 @@
 import { requireAuth } from '../auth.js';
 import { getProjects } from '../api.js';
-import { h, formatDate } from '../ui.js';
+import { h, formatDate, projectStatusBadge } from '../ui.js';
 
 async function init() {
   const user = await requireAuth();
@@ -28,7 +28,10 @@ async function init() {
         ${projects.map(p => `
           <a href="/project-detail/?id=${h(p.id)}" class="project-card">
             <div>
-              <div class="project-card-name">${h(p.name)}</div>
+              <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.25rem">
+                <span class="project-card-name" style="margin:0">${h(p.name)}</span>
+                ${projectStatusBadge(p.status)}
+              </div>
               ${p.group ? `<div class="project-card-meta">กลุ่ม ${h(p.group)}${p.in_charge_person ? ` · ${h(p.in_charge_person)}` : ''}</div>` : p.in_charge_person ? `<div class="project-card-meta">ผู้รับผิดชอบ: ${h(p.in_charge_person)}</div>` : ''}
               <div class="project-card-meta" style="margin-top:.2rem">ผู้รับผิดชอบ: ${h(p.owner_name)}</div>
             </div>

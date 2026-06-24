@@ -1,6 +1,6 @@
 import { requireAuth } from '../auth.js';
 import { getRequests, getProjects } from '../api.js';
-import { h, statusBadge, formatDate } from '../ui.js';
+import { h, statusBadge, formatDate, projectStatusBadge } from '../ui.js';
 
 async function init() {
   const user = await requireAuth();
@@ -74,7 +74,10 @@ async function init() {
           return `
             <a href="/project-detail/?id=${h(p.id)}" class="project-card">
               <div style="flex:1;min-width:0">
-                <div class="project-card-name">${h(p.name)}</div>
+                <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.2rem">
+                  <span class="project-card-name" style="margin:0">${h(p.name)}</span>
+                  ${projectStatusBadge(p.status)}
+                </div>
                 <div class="project-card-meta">
                   ${formatDate(p.start_date)} – ${formatDate(p.end_date)}
                   ${p.in_charge_person ? ` · ${h(p.in_charge_person)}` : ''}

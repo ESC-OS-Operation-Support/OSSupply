@@ -1,6 +1,6 @@
 import { requireAuth } from '../auth.js';
 import { getProject, deleteProject, getRequests, addProjectMember, removeProjectMember } from '../api.js';
-import { h, statusBadge, formatDate, openModal } from '../ui.js';
+import { h, statusBadge, formatDate, openModal, projectStatusBadge } from '../ui.js';
 
 async function init() {
   const user = await requireAuth();
@@ -19,17 +19,14 @@ async function init() {
     const canEdit   = user.role === 'admin' || user.id === project.owner_id;
     const isLeader  = user.id === project.owner_id;
     const linked    = reqData.requests.filter(r => r.project_id === id);
-    const now       = new Date();
-    const isActive  = new Date(project.end_date) >= now;
+    const isActive  = project.status === 'active';
 
     app.innerHTML = `
       <button class="back-btn" onclick="history.back()">← กลับ</button>
       <div class="page-header">
         <div>
           <h1 class="page-title">${h(project.name)}</h1>
-          ${isActive
-            ? '<span class="badge badge-in_lend" style="font-size:.75rem">ดำเนินการอยู่</span>'
-            : '<span class="badge badge-completed" style="font-size:.75rem">สิ้นสุดแล้ว</span>'}
+          ${projectStatusBadge(project.status)}
         </div>
         <div class="actions-bar">
           ${isActive ? `<a href="/new-request/?project_id=${h(id)}" class="btn btn-primary">+ สร้างคำขอยืม</a>` : ''}
