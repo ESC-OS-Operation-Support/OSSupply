@@ -155,34 +155,36 @@ async function init() {
         addBtn.disabled = false;
       }
 
+      async function fetchUserResults(q) {
+        try {
+          const { users } = await searchUsers(q);
+          resultsBox.innerHTML = users.length === 0
+            ? `<div class="search-dropdown-empty">ไม่พบผู้ใช้</div>`
+            : users.map((u, i) => `
+                <div class="search-dropdown-item" data-idx="${i}">
+                  ${u.avatar_url
+                    ? `<img src="${h(u.avatar_url)}" class="member-avatar" alt="${h(u.name)}">`
+                    : `<div class="member-avatar-ph">${h(u.name.charAt(0))}</div>`}
+                  <div>
+                    <div style="font-weight:600">${h(u.name)}</div>
+                    <div style="font-size:.75rem;color:var(--text-muted)">${h(u.email)}</div>
+                  </div>
+                </div>`).join('');
+          resultsBox.querySelectorAll('.search-dropdown-item').forEach(el => {
+            el.addEventListener('mousedown', (e) => { e.preventDefault(); pickUser(users[+el.dataset.idx]); });
+          });
+          resultsBox.style.display = 'block';
+        } catch {}
+      }
+
+      searchInput.addEventListener('focus', () => fetchUserResults(searchInput.value.trim()));
+
       searchInput.addEventListener('input', () => {
         selectedUser = null;
         addBtn.disabled = true;
         selectedBox.style.display = 'none';
         clearTimeout(debounceTimer);
-        const q = searchInput.value.trim();
-        if (q.length < 2) { resultsBox.style.display = 'none'; return; }
-        debounceTimer = setTimeout(async () => {
-          try {
-            const { users } = await searchUsers(q);
-            resultsBox.innerHTML = users.length === 0
-              ? `<div class="search-dropdown-empty">ไม่พบผู้ใช้</div>`
-              : users.map((u, i) => `
-                  <div class="search-dropdown-item" data-idx="${i}">
-                    ${u.avatar_url
-                      ? `<img src="${h(u.avatar_url)}" class="member-avatar" alt="${h(u.name)}">`
-                      : `<div class="member-avatar-ph">${h(u.name.charAt(0))}</div>`}
-                    <div>
-                      <div style="font-weight:600">${h(u.name)}</div>
-                      <div style="font-size:.75rem;color:var(--text-muted)">${h(u.email)}</div>
-                    </div>
-                  </div>`).join('');
-            resultsBox.querySelectorAll('.search-dropdown-item').forEach(el => {
-              el.addEventListener('mousedown', (e) => { e.preventDefault(); pickUser(users[+el.dataset.idx]); });
-            });
-            resultsBox.style.display = 'block';
-          } catch {}
-        }, 300);
+        debounceTimer = setTimeout(() => fetchUserResults(searchInput.value.trim()), 300);
       });
 
       searchInput.addEventListener('blur', () => setTimeout(() => { resultsBox.style.display = 'none'; }, 150));

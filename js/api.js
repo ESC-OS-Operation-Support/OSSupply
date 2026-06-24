@@ -62,7 +62,7 @@ export const deleteProject  = (id)        => api.delete(`/projects/${id}`);
 
 export const addProjectMember    = (id, data)   => api.post(`/projects/${id}/members`, data);
 export const removeProjectMember = (id, userId) => api.delete(`/projects/${id}/members/${userId}`);
-export const searchUsers         = (q)          => api.get(`/users/search?q=${encodeURIComponent(q)}`);
+export const searchUsers         = (q)          => { const p = new URLSearchParams({ limit: 10 }); if (q) p.set('q', q); return api.get('/users/search?' + p); };
 
 // Requests
 export const getRequests       = (status)       => api.get(`/requests${status ? '?status=' + status : ''}`);

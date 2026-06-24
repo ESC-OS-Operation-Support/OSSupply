@@ -228,40 +228,42 @@ async function init() {
       const itemResults = document.getElementById('item-search-results');
       const addBtn      = document.getElementById('btn-add-item');
 
+      async function fetchItemResults(q) {
+        try {
+          const { items: found } = await getItems({ search: q || undefined, limit: 10 });
+          const avail = found.filter(i => i.is_active === 1 && i.available_quantity > 0);
+          itemResults.innerHTML = avail.length === 0
+            ? `<div class="search-dropdown-empty">ไม่พบอุปกรณ์</div>`
+            : avail.map((i, idx) => `
+                <div class="search-dropdown-item" data-idx="${idx}">
+                  <div style="flex:1;min-width:0">
+                    <div style="font-weight:600">${h(i.name)}</div>
+                    <div style="font-size:.75rem;color:var(--text-muted)">
+                      ${h(i.category || '')}${i.category ? ' · ' : ''}พร้อมใช้ ${i.available_quantity}${i.unit ? ' ' + h(i.unit) : ''}
+                    </div>
+                  </div>
+                </div>`).join('');
+          itemResults.querySelectorAll('.search-dropdown-item').forEach(el => {
+            el.addEventListener('mousedown', (e) => {
+              e.preventDefault();
+              selectedItem = avail[+el.dataset.idx];
+              itemSearch.value = selectedItem.name;
+              itemResults.style.display = 'none';
+              addBtn.disabled = false;
+              document.getElementById('add-item-qty').max = selectedItem.available_quantity;
+            });
+          });
+          itemResults.style.display = 'block';
+        } catch {}
+      }
+
+      itemSearch.addEventListener('focus', () => fetchItemResults(itemSearch.value.trim()));
+
       itemSearch.addEventListener('input', () => {
         selectedItem = null;
         addBtn.disabled = true;
         clearTimeout(itemDebounce);
-        const q = itemSearch.value.trim();
-        if (q.length < 2) { itemResults.style.display = 'none'; return; }
-        itemDebounce = setTimeout(async () => {
-          try {
-            const { items: found } = await getItems({ search: q, limit: 10 });
-            const avail = found.filter(i => i.is_active === 1 && i.available_quantity > 0);
-            itemResults.innerHTML = avail.length === 0
-              ? `<div class="search-dropdown-empty">ไม่พบอุปกรณ์</div>`
-              : avail.map((i, idx) => `
-                  <div class="search-dropdown-item" data-idx="${idx}">
-                    <div style="flex:1;min-width:0">
-                      <div style="font-weight:600">${h(i.name)}</div>
-                      <div style="font-size:.75rem;color:var(--text-muted)">
-                        ${h(i.category || '')}${i.category ? ' · ' : ''}พร้อมใช้ ${i.available_quantity}${i.unit ? ' ' + h(i.unit) : ''}
-                      </div>
-                    </div>
-                  </div>`).join('');
-            itemResults.querySelectorAll('.search-dropdown-item').forEach(el => {
-              el.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                selectedItem = avail[+el.dataset.idx];
-                itemSearch.value = selectedItem.name;
-                itemResults.style.display = 'none';
-                addBtn.disabled = false;
-                document.getElementById('add-item-qty').max = selectedItem.available_quantity;
-              });
-            });
-            itemResults.style.display = 'block';
-          } catch {}
-        }, 300);
+        itemDebounce = setTimeout(() => fetchItemResults(itemSearch.value.trim()), 300);
       });
 
       itemSearch.addEventListener('blur', () => setTimeout(() => { itemResults.style.display = 'none'; }, 150));
