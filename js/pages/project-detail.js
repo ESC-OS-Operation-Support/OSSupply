@@ -88,7 +88,7 @@ async function init() {
                   <div style="font-size:.88rem;font-weight:600">${h(m.name)}</div>
                   <div style="font-size:.75rem;color:var(--text-muted)">${h(m.email)}</div>
                 </div>
-                <span class="member-role">${m.role === 'leader' ? 'หัวหน้า' : 'สมาชิก'}</span>
+                <span class="member-role">${m.role === 'leader' ? 'ผู้รับผิดชอบ' : 'สมาชิก'}</span>
                 ${isLeader && m.role !== 'leader'
                   ? `<button class="btn btn-danger btn-sm do-remove-member" data-uid="${h(m.user_id)}" style="margin-left:.35rem">✕</button>`
                   : ''}
