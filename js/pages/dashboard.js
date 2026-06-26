@@ -1,6 +1,7 @@
 import { requireAuth } from '../auth.js';
 import { getRequests, getProjects } from '../api.js';
 import { h, statusBadge, formatDate, projectStatusBadge } from '../ui.js';
+import { openProjectModal } from '../project-modal.js';
 
 async function init() {
   const user = await requireAuth();
@@ -55,17 +56,19 @@ async function init() {
       </div>`;
   }
 
-  // Project list
-  const projectList = projects.length === 0
+  // Project list — exclude archived; they live in the /projects/ archived tab
+  const visibleProjects = projects.filter(p => p.status !== 'archived');
+
+  const projectList = visibleProjects.length === 0
     ? `<div class="dash-empty">
         <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--border-strong)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
         </svg>
         <p>ยังไม่มีโครงการ</p>
-        <a href="/project-form/" class="btn btn-primary btn-sm">+ สร้างโครงการ</a>
+        <button class="btn btn-primary btn-sm do-create-project">+ สร้างโครงการ</button>
       </div>`
     : `<div class="project-list">
-        ${projects.map(p => {
+        ${visibleProjects.map(p => {
           const projectRequests = active.filter(r => r.project_id === p.id);
           const hasProjectOverdue = projectRequests.some(r => r.status === 'overdue');
           const hasProjectReady   = projectRequests.some(r => r.status === 'ready_for_pickup');
@@ -105,17 +108,23 @@ async function init() {
         <p class="dash-sub">${greeting}</p>
         <h1 class="dash-greeting">${h(user.name)}</h1>
       </div>
-      <a href="/project-form/" class="btn btn-primary">+ สร้างโครงการ</a>
+      <button class="btn btn-primary do-create-project">+ สร้างโครงการ</button>
     </div>
 
     ${banner}
 
     <div class="page-header" style="margin-bottom:1rem">
       <h2 style="font-size:1.1rem;font-weight:700">โครงการของฉัน</h2>
-      <span style="font-size:.85rem;color:var(--text-muted)">${projects.length} โครงการ</span>
+      <span style="font-size:.85rem;color:var(--text-muted)">${visibleProjects.length} โครงการ</span>
     </div>
 
     ${projectList}`;
+
+  document.querySelectorAll('.do-create-project').forEach(btn => {
+    btn.addEventListener('click', () =>
+      openProjectModal(null, project => { window.location.href = `/project-detail/?id=${project.id}`; })
+    );
+  });
 }
 
 init();

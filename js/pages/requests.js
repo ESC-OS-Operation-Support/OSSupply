@@ -1,6 +1,8 @@
 import { requireAuth } from '../auth.js';
 import { getRequests } from '../api.js';
 import { h, statusBadge, formatDateTime } from '../ui.js';
+import { renderSelect, initSelect } from '../select.js';
+import { openRequestModal } from '../request-modal.js';
 
 const STATUS_OPTS = [
   ['', 'ทุกสถานะ'], ['draft', 'ร่าง'], ['pending', 'รอดำเนินการ'],
@@ -23,7 +25,7 @@ async function init() {
           <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
         </svg>
         <p>ไม่มีคำขอยืม</p>
-        <a href="/new-request/" class="btn btn-primary btn-sm">สร้างคำขอ</a>
+        <button class="btn btn-primary btn-sm do-create-req">สร้างคำขอ</button>
       </div>`;
     return `
       <div class="table-wrap">
@@ -54,16 +56,18 @@ async function init() {
     <div class="page-header">
       <h1 class="page-title">คำขอยืมอุปกรณ์</h1>
       <div class="filter-row">
-        <select class="filter-select" id="status-filter">
-          ${STATUS_OPTS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}
-        </select>
-        <a href="/new-request/" class="btn btn-primary">+ สร้างคำขอ</a>
+        ${renderSelect({ id: 'status-filter', value: '', options: STATUS_OPTS })}
+        <button class="btn btn-primary do-create-req">+ สร้างคำขอ</button>
       </div>
     </div>
     <div id="req-container">${renderTable(requests)}</div>`;
 
-  document.getElementById('status-filter').addEventListener('change', async (e) => {
-    const status    = e.target.value;
+  // Single delegation listener covers both header button and empty-state button
+  app.addEventListener('click', e => {
+    if (e.target.closest('.do-create-req')) openRequestModal();
+  });
+
+  initSelect('status-filter', async status => {
     const container = document.getElementById('req-container');
     container.innerHTML = '<div class="spinner">กำลังโหลด...</div>';
     const { requests: filtered } = await getRequests(status || undefined);

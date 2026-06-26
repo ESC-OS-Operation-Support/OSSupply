@@ -1,6 +1,7 @@
-import { requireAuth } from '../auth.js';
+import { requireAuth, refreshNavStatus } from '../auth.js';
 import { getAllReturns, confirmReturn, rejectReturn } from '../api.js';
-import { h, formatDateTime } from '../ui.js';
+import { h, formatDateTime, showToast } from '../ui.js';
+import { renderSelect, initSelect } from '../select.js';
 
 async function init() {
   const user = await requireAuth(['staff', 'admin']);
@@ -14,12 +15,10 @@ async function init() {
     app.innerHTML = `
       <div class="page-header">
         <h1 class="page-title">การคืนอุปกรณ์</h1>
-        <select class="filter-select" id="status-filter">
-          <option value="">ทั้งหมด</option>
-          <option value="pending"   ${statusFilter === 'pending'   ? 'selected' : ''}>รอยืนยัน</option>
-          <option value="confirmed" ${statusFilter === 'confirmed' ? 'selected' : ''}>ยืนยันแล้ว</option>
-          <option value="rejected"  ${statusFilter === 'rejected'  ? 'selected' : ''}>ถูกปฏิเสธ</option>
-        </select>
+        ${renderSelect({ id: 'status-filter', value: statusFilter, options: [
+          ['', 'ทั้งหมด'], ['pending', 'รอยืนยัน'],
+          ['confirmed', 'ยืนยันแล้ว'], ['rejected', 'ถูกปฏิเสธ'],
+        ] })}
       </div>
       ${returns.length === 0
         ? '<p class="empty-text">ไม่มีรายการคืน</p>'
@@ -57,13 +56,12 @@ async function init() {
               </div>`).join('')}
           </div>`}`;
 
-    document.getElementById('status-filter').value = statusFilter;
-    document.getElementById('status-filter').addEventListener('change', (e) => renderPage(e.target.value));
+    initSelect('status-filter', v => renderPage(v));
 
     document.querySelectorAll('.do-confirm').forEach(btn => {
       btn.addEventListener('click', async () => {
         btn.disabled = true;
-        try { await confirmReturn(btn.dataset.id); await renderPage(statusFilter); }
+        try { await confirmReturn(btn.dataset.id); showToast('ยืนยันการคืนสำเร็จ'); await renderPage(statusFilter); refreshNavStatus(); }
         catch (err) { alert(err.message); btn.disabled = false; }
       });
     });
@@ -74,7 +72,7 @@ async function init() {
         const note = noteInput?.value?.trim();
         if (!note) { alert('กรุณาระบุเหตุผลการปฏิเสธ'); return; }
         btn.disabled = true;
-        try { await rejectReturn(btn.dataset.id, { admin_note: note }); await renderPage(statusFilter); }
+        try { await rejectReturn(btn.dataset.id, { admin_note: note }); showToast('ปฏิเสธการคืนแล้ว'); await renderPage(statusFilter); refreshNavStatus(); }
         catch (err) { alert(err.message); btn.disabled = false; }
       });
     });

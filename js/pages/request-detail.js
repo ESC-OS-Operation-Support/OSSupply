@@ -1,11 +1,12 @@
-import { requireAuth } from '../auth.js';
+import { requireAuth, refreshNavStatus } from '../auth.js';
 import {
-  getRequest, getRequestReturns, getItems,
-  addRequestItem, removeRequestItem, submitRequest, cancelRequest,
+  getRequest, getRequestReturns, getItems, getProject,
+  addRequestItem, removeRequestItem, patchRequestItem, submitRequest, cancelRequest,
   rejectRequest, processRequest, tickItem, markReady, confirmPickup,
-  submitReturn, uploadPhoto,
+  submitReturn, uploadPhoto, updateRequest, photoUrl,
 } from '../api.js';
-import { h, statusBadge, formatDateTime, formatCountdown } from '../ui.js';
+import { h, statusBadge, formatDateTime, formatCountdown, showToast, showConfirm } from '../ui.js';
+import { renderPicker, initPicker } from '../datepicker.js';
 
 let countdownInterval = null;
 
@@ -23,12 +24,16 @@ async function init() {
       getRequest(id),
       getRequestReturns(id).catch(() => ({ returns: [] })),
     ]);
-    return { request, items, returns: returnsData.returns };
+    let project = null;
+    if (request.project_id) {
+      try { const r = await getProject(request.project_id); project = r.project; } catch {}
+    }
+    return { request, items, returns: returnsData.returns, project };
   }
 
   async function renderPage() {
     clearInterval(countdownInterval);
-    const { request, items, returns } = await load();
+    const { request, items, returns, project } = await load();
     const isStaff   = user.role === 'staff' || user.role === 'admin';
     const isOwner   = user.id === request.requester_id;
     const status    = request.status;
@@ -36,16 +41,28 @@ async function init() {
     const allPrepared = items.filter(i => (i.quantity_approved ?? 0) > 0).every(i => i.is_prepared === 1);
 
     function itemRows() {
-      const showApproved = ['processing', 'ready_for_pickup', 'in_lend', 'overdue', 'returned', 'completed'].includes(status);
+      const showApprovedDisplay = ['ready_for_pickup', 'in_lend', 'overdue', 'returned', 'completed', 'return_rejected'].includes(status)
+                                  || (status === 'processing' && !isStaff);
+      const showApprovedEdit    = isStaff && status === 'processing';
       return items.map(it => `
         <tr data-item-id="${h(it.item_id)}">
-          <td>${h(it.item_name)}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:.55rem">
+              ${it.photo_url
+                ? `<img src="${h(it.photo_url)}" alt="${h(it.item_name)}" class="table-item-thumb" style="flex-shrink:0">`
+                : `<div class="table-item-thumb table-item-thumb-ph" style="flex-shrink:0"></div>`}
+              <div>
+                <div style="font-weight:600">${h(it.item_name)}</div>
+                <div class="mono" style="font-size:.72rem;color:var(--text-muted)">#${h(String(it.item_id).slice(0, 8))}</div>
+              </div>
+            </div>
+          </td>
           <td>${h(it.category || '-')}</td>
           <td>${it.quantity_requested}</td>
-          ${showApproved ? `<td>${it.quantity_approved ?? '-'}</td>` : ''}
-          ${isStaff && status === 'pending'
-            ? `<td><input type="number" class="qty-input approve-qty" data-item="${h(it.item_id)}"
-                  min="0" max="${it.quantity_requested}" value="${it.quantity_requested}"></td>` : ''}
+          ${showApprovedDisplay ? `<td>${it.quantity_approved ?? '-'}</td>` : ''}
+          ${showApprovedEdit
+            ? `<td><input type="number" class="qty-input edit-approved-qty" data-item="${h(it.item_id)}"
+                  min="0" max="${it.quantity_requested}" value="${it.quantity_approved ?? it.quantity_requested}"></td>` : ''}
           ${isStaff && status === 'processing'
             ? `<td><button class="tick-btn ${it.is_prepared ? 'ticked' : ''} do-tick" data-item="${h(it.item_id)}" title="คลิกเพื่อ${it.is_prepared ? 'ยกเลิก' : 'ทำเครื่องหมาย'}">
                 ${it.is_prepared ? '✓' : ''}</button></td>` : ''}
@@ -55,16 +72,17 @@ async function init() {
     }
 
     function itemsTable() {
-      const showApproved = ['processing', 'ready_for_pickup', 'in_lend', 'overdue', 'returned', 'completed'].includes(status);
+      const showApprovedDisplay = ['ready_for_pickup', 'in_lend', 'overdue', 'returned', 'completed', 'return_rejected'].includes(status)
+                                  || (status === 'processing' && !isStaff);
+      const showApprovedEdit    = isStaff && status === 'processing';
       return `
         <table class="req-items-table">
           <thead>
             <tr>
               <th>อุปกรณ์</th><th>หมวดหมู่</th><th>จำนวนที่ขอ</th>
-              ${showApproved ? '<th>จำนวนที่อนุมัติ</th>' : ''}
-              ${isStaff && status === 'pending'    ? '<th>จำนวนอนุมัติ</th>' : ''}
-              ${isStaff && status === 'processing' ? '<th>เตรียมแล้ว</th>'   : ''}
-              ${isOwner && status === 'draft'      ? '<th></th>'              : ''}
+              ${(showApprovedDisplay || showApprovedEdit) ? '<th>จำนวนที่อนุมัติ</th>' : ''}
+              ${isStaff && status === 'processing' ? '<th>เตรียมแล้ว</th>' : ''}
+              ${isOwner && status === 'draft'      ? '<th></th>'           : ''}
             </tr>
           </thead>
           <tbody id="items-tbody">${itemRows()}</tbody>
@@ -122,8 +140,9 @@ async function init() {
             : ''}
           ${(isOwner || isStaff) && status === 'ready_for_pickup'
             ? `<button class="btn btn-success" id="btn-pickup">ยืนยันการรับ</button>` : ''}
-          ${isStaff && status === 'processing' && allPrepared
-            ? `<button class="btn btn-success" id="btn-ready">พร้อมให้รับแล้ว</button>` : ''}
+          ${isStaff && status === 'processing'
+            ? `<button class="btn btn-success" id="btn-ready" ${!allPrepared ? 'disabled title="ต้องทำเครื่องหมายเตรียมแล้วทุกรายการก่อน"' : ''}>พร้อมให้รับแล้ว</button>`
+            : ''}
           ${canCancel
             ? `<button class="btn btn-danger" id="btn-cancel">ยกเลิกคำขอ</button>` : ''}
         </div>
@@ -133,16 +152,42 @@ async function init() {
 
       <div class="card">
         <div class="card-title">ข้อมูลคำขอ</div>
-        <div class="req-info-grid">
-          ${request.project_name ? `<div class="info-row"><span class="info-label">โครงการ</span><a href="/project-detail/?id=${h(request.project_id)}" style="color:var(--primary)">${h(request.project_name)}</a></div>` : ''}
-          <div class="info-row"><span class="info-label">วันที่รับที่ขอ</span><span>${formatDateTime(request.requested_pickup_datetime)}</span></div>
-          ${request.confirmed_pickup_datetime ? `<div class="info-row"><span class="info-label">วันที่รับยืนยัน</span><span>${formatDateTime(request.confirmed_pickup_datetime)}</span></div>` : ''}
-          <div class="info-row"><span class="info-label">วันที่คืน</span><span>${formatDateTime(request.requested_return_datetime)}</span></div>
-          ${request.submitted_at ? `<div class="info-row"><span class="info-label">ส่งเมื่อ</span><span>${formatDateTime(request.submitted_at)}</span></div>` : ''}
-          ${request.pickup_timeout_at && status === 'ready_for_pickup'
-            ? `<div class="info-row"><span class="info-label">หมดเวลารับ</span><span class="countdown">${formatCountdown(request.pickup_timeout_at)}</span></div>` : ''}
-        </div>
-        ${request.admin_note ? `<div class="alert alert-info" style="margin-top:.75rem">หมายเหตุจากเจ้าหน้าที่: ${h(request.admin_note)}</div>` : ''}
+        ${status === 'draft' && (isOwner || isStaff) ? `
+          <div id="req-edit-error"></div>
+          <div class="form" style="margin-top:.1rem">
+            <div class="form-group">
+              <label class="form-label">ชื่อคำขอ</label>
+              <input class="form-input" id="edit-req-name" value="${h(request.name || '')}" placeholder="เช่น ยืมอุปกรณ์สำหรับกิจกรรม..." autocomplete="off">
+            </div>
+            ${request.project_name ? `<div class="info-row" style="margin-bottom:.75rem"><span class="info-label">โครงการ</span><a href="/project-detail/?id=${h(request.project_id)}" style="color:var(--primary)">${h(request.project_name)}</a></div>` : ''}
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">วันที่รับ</label>
+                ${renderPicker({ id: 'edit-pickup', withTime: true, restricted: true,
+                    value: (request.requested_pickup_datetime || '').slice(0, 16),
+                    min: project ? project.start_date : '', max: project ? project.end_date : '' })}
+              </div>
+              <div class="form-group">
+                <label class="form-label">วันที่คืน</label>
+                ${renderPicker({ id: 'edit-return', withTime: true, restricted: true,
+                    value: (request.requested_return_datetime || '').slice(0, 16),
+                    min: project ? project.start_date : '', max: project ? project.end_date : '' })}
+              </div>
+            </div>
+            <div class="form-actions" style="padding-top:.1rem">
+              <button class="btn btn-primary btn-sm" id="btn-save-req">บันทึก</button>
+            </div>
+          </div>` : `
+          <div class="req-info-grid">
+            ${request.project_name ? `<div class="info-row"><span class="info-label">โครงการ</span><a href="/project-detail/?id=${h(request.project_id)}" style="color:var(--primary)">${h(request.project_name)}</a></div>` : ''}
+            <div class="info-row"><span class="info-label">วันที่รับที่ขอ</span><span>${formatDateTime(request.requested_pickup_datetime)}</span></div>
+            ${request.confirmed_pickup_datetime ? `<div class="info-row"><span class="info-label">วันที่รับยืนยัน</span><span>${formatDateTime(request.confirmed_pickup_datetime)}</span></div>` : ''}
+            <div class="info-row"><span class="info-label">วันที่คืน</span><span>${formatDateTime(request.requested_return_datetime)}</span></div>
+            ${request.submitted_at ? `<div class="info-row"><span class="info-label">ส่งเมื่อ</span><span>${formatDateTime(request.submitted_at)}</span></div>` : ''}
+            ${request.pickup_timeout_at && status === 'ready_for_pickup'
+              ? `<div class="info-row"><span class="info-label">หมดเวลารับ</span><span class="countdown">${formatCountdown(request.pickup_timeout_at)}</span></div>` : ''}
+          </div>
+          ${request.admin_note ? `<div class="alert alert-info" style="margin-top:.75rem">หมายเหตุจากเจ้าหน้าที่: ${h(request.admin_note)}</div>` : ''}`}
       </div>
 
       <div class="card">
@@ -164,7 +209,7 @@ async function init() {
           <div class="process-section">
             <div class="form-group" style="margin-bottom:.75rem">
               <label class="form-label" style="font-size:.82rem">วันและเวลารับยืนยัน (ไม่บังคับ)</label>
-              <input class="form-input" type="datetime-local" id="process-pickup" style="max-width:280px">
+              <div style="max-width:280px">${renderPicker({ id: 'process-pickup', withTime: true })}</div>
             </div>
             <div class="form-group" style="margin-bottom:.75rem">
               <label class="form-label" style="font-size:.82rem">หมายเหตุ (ไม่บังคับ)</label>
@@ -217,6 +262,34 @@ async function init() {
       countdownInterval = setInterval(updateCountdown, 30000);
     }
 
+    initPicker('process-pickup');
+    initPicker('edit-pickup');
+    initPicker('edit-return');
+
+    const saveBtn = document.getElementById('btn-save-req');
+    saveBtn?.addEventListener('click', async () => {
+      const name   = document.getElementById('edit-req-name')?.value.trim() || null;
+      const pickup = document.getElementById('edit-pickup')?.dataset.value || undefined;
+      const ret    = document.getElementById('edit-return')?.dataset.value || undefined;
+      const errEl  = document.getElementById('req-edit-error');
+      if (errEl) errEl.innerHTML = '';
+      const body = {};
+      if (name !== undefined)  body.name = name;
+      if (pickup !== undefined) body.requested_pickup_datetime = pickup;
+      if (ret    !== undefined) body.requested_return_datetime = ret;
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'กำลังบันทึก...';
+      try {
+        await updateRequest(id, body);
+        showToast('บันทึกสำเร็จ');
+        await renderPage();
+      } catch (err) {
+        if (errEl) errEl.innerHTML = `<div class="alert alert-error" style="margin-bottom:.6rem">${h(err.message)}</div>`;
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'บันทึก';
+      }
+    });
+
     function errBox(msg) {
       document.getElementById('action-error').innerHTML = `<div class="alert alert-error">${h(msg)}</div>`;
     }
@@ -237,10 +310,14 @@ async function init() {
             ? `<div class="search-dropdown-empty">ไม่พบอุปกรณ์</div>`
             : avail.map((i, idx) => `
                 <div class="search-dropdown-item" data-idx="${idx}">
+                  ${i.image_r2_key
+                    ? `<img src="${photoUrl(i.image_r2_key)}" alt="${h(i.name)}" class="table-item-thumb" style="flex-shrink:0">`
+                    : `<div class="table-item-thumb table-item-thumb-ph" style="flex-shrink:0"></div>`}
                   <div style="flex:1;min-width:0">
                     <div style="font-weight:600">${h(i.name)}</div>
                     <div style="font-size:.75rem;color:var(--text-muted)">
-                      ${h(i.category || '')}${i.category ? ' · ' : ''}พร้อมใช้ ${i.available_quantity}${i.unit ? ' ' + h(i.unit) : ''}
+                      <span class="mono">#${h(String(i.id).slice(0, 8))}</span>
+                      ${i.category ? ` · ${h(i.category)}` : ''} · พร้อมใช้ ${i.available_quantity}${i.unit ? ' ' + h(i.unit) : ''}
                     </div>
                   </div>
                 </div>`).join('');
@@ -278,6 +355,7 @@ async function init() {
             document.getElementById('add-warnings').innerHTML =
               warnings.map(w => `<div class="alert alert-warning">⚠ ${h(w)}</div>`).join('');
           }
+          showToast('เพิ่มอุปกรณ์สำเร็จ');
           await renderPage();
         } catch (err) { errBox(err.message); }
       });
@@ -291,24 +369,24 @@ async function init() {
     });
 
     document.getElementById('btn-submit')?.addEventListener('click', async () => {
-      if (!confirm('ยืนยันการส่งคำขอ?')) return;
-      try { await submitRequest(id); await renderPage(); }
+      if (!await showConfirm('ยืนยันการส่งคำขอ?')) return;
+      try { await submitRequest(id); showToast('ส่งคำขอสำเร็จ'); await renderPage(); refreshNavStatus(); }
       catch (err) { errBox(err.message); }
     });
 
     document.getElementById('btn-cancel')?.addEventListener('click', async () => {
-      if (!confirm('ยืนยันการยกเลิกคำขอ?')) return;
-      try { await cancelRequest(id); await renderPage(); }
+      if (!await showConfirm('ยืนยันการยกเลิกคำขอ?', { danger: true })) return;
+      try { await cancelRequest(id); showToast('ยกเลิกคำขอแล้ว'); await renderPage(); refreshNavStatus(); }
       catch (err) { errBox(err.message); }
     });
 
     document.getElementById('btn-pickup')?.addEventListener('click', async () => {
-      try { await confirmPickup(id); await renderPage(); }
+      try { await confirmPickup(id); showToast('ยืนยันการรับอุปกรณ์แล้ว'); await renderPage(); refreshNavStatus(); }
       catch (err) { errBox(err.message); }
     });
 
     document.getElementById('btn-ready')?.addEventListener('click', async () => {
-      try { await markReady(id); await renderPage(); }
+      try { await markReady(id); showToast('ทำเครื่องหมายพร้อมรับแล้ว'); await renderPage(); refreshNavStatus(); }
       catch (err) { errBox(err.message); }
     });
 
@@ -319,27 +397,40 @@ async function init() {
       });
     });
 
+    document.querySelectorAll('.edit-approved-qty').forEach(inp => {
+      inp.addEventListener('change', async () => {
+        const qty = parseInt(inp.value);
+        if (isNaN(qty)) return;
+        inp.disabled = true;
+        try {
+          const { request_item } = await patchRequestItem(id, inp.dataset.item, { quantity_approved: qty });
+          inp.value = request_item.quantity_approved;
+        } catch (err) {
+          errBox(err.message);
+        } finally {
+          inp.disabled = false;
+        }
+      });
+    });
+
     document.getElementById('btn-process')?.addEventListener('click', async () => {
-      const qtys   = [...document.querySelectorAll('.approve-qty')].map(inp => ({
-        item_id: inp.dataset.item,
-        quantity_approved: parseInt(inp.value),
-      }));
-      const pickup = document.getElementById('process-pickup').value;
+      const pickup = document.getElementById('process-pickup')?.dataset.value || '';
       const note   = document.getElementById('process-note').value;
       try {
         await processRequest(id, {
-          items: qtys,
           confirmed_pickup_datetime: pickup || undefined,
           admin_note: note || undefined,
         });
+        showToast('ดำเนินการสำเร็จ');
         await renderPage();
+        refreshNavStatus();
       } catch (err) { errBox(err.message); }
     });
 
     document.getElementById('btn-reject')?.addEventListener('click', async () => {
       const note = document.getElementById('reject-note').value;
       if (!note) { errBox('กรุณาระบุเหตุผลการปฏิเสธ'); return; }
-      try { await rejectRequest(id, { admin_note: note }); await renderPage(); }
+      try { await rejectRequest(id, { admin_note: note }); showToast('ปฏิเสธคำขอแล้ว'); await renderPage(); refreshNavStatus(); }
       catch (err) { errBox(err.message); }
     });
 
@@ -352,7 +443,9 @@ async function init() {
         const r2Key = await uploadPhoto(file);
         const note  = document.getElementById('return-note').value;
         await submitReturn(id, { photo_r2_key: r2Key, note: note || undefined });
+        showToast('ส่งการคืนสำเร็จ');
         await renderPage();
+        refreshNavStatus();
       } catch (err) {
         errBox(err.message);
         btn.disabled = false; btn.textContent = 'ส่งการคืน';

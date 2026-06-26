@@ -1,6 +1,7 @@
 import { requireAuth } from '../auth.js';
 import { updateMe } from '../api.js';
-import { h } from '../ui.js';
+import { h, showToast } from '../ui.js';
+import { renderSelect, initSelect } from '../select.js';
 
 const GROUPS = 'ABCDEFGHJKLMNPQRST'.split('');
 const YEARS  = ['1', '2', '3', '4', 'ป.โท/ป.เอก'];
@@ -14,11 +15,9 @@ async function init() {
   const isRequired = params.get('required') === 'true';
   const app = document.getElementById('app');
 
-  const sel = (name, options, current) =>
-    `<select class="form-select" name="${name}">
-      <option value="">-- ไม่ระบุ --</option>
-      ${options.map(o => `<option value="${h(o)}" ${String(current) === String(o) ? 'selected' : ''}>${h(o)}</option>`).join('')}
-    </select>`;
+  const sel = (id, name, options, current) =>
+    renderSelect({ id, name, value: String(current ?? ''), variant: 'form',
+      options: [['', '-- ไม่ระบุ --'], ...options.map(o => [String(o), String(o)])] });
 
   app.innerHTML = `
     ${isFirst ? `
@@ -71,7 +70,7 @@ async function init() {
             </div>
             <div class="form-group">
               <label class="form-label">ชั้นปี</label>
-              ${sel('year', YEARS, user.year)}
+              ${sel('sel-year', 'year', YEARS, user.year)}
             </div>
           </div>
           <div class="form-row">
@@ -81,7 +80,7 @@ async function init() {
             </div>
             <div class="form-group">
               <label class="form-label">Group</label>
-              ${sel('study_group', GROUPS, user.study_group)}
+              ${sel('sel-group', 'study_group', GROUPS, user.study_group)}
             </div>
           </div>
           <div class="form-row">
@@ -107,6 +106,9 @@ async function init() {
 
     </div>`;
 
+  initSelect('sel-year');
+  initSelect('sel-group');
+
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd     = new FormData(e.target);
@@ -129,7 +131,7 @@ async function init() {
       if (isFirst || isRequired) {
         window.location.href = '/dashboard/';
       } else {
-        okEl.innerHTML = `<div class="alert alert-success" style="margin-bottom:.75rem">บันทึกข้อมูลเรียบร้อยแล้ว</div>`;
+        showToast('บันทึกข้อมูลเรียบร้อยแล้ว');
         btn.disabled = false;
         btn.textContent = 'บันทึก';
       }

@@ -1,6 +1,9 @@
 import { requireAuth } from '../auth.js';
 import { getProjects, createRequest, addRequestItem } from '../api.js';
 import { h, formatDate } from '../ui.js';
+import { openProjectModal } from '../project-modal.js';
+import { renderSelect, initSelect } from '../select.js';
+import { renderPicker, initPicker } from '../datepicker.js';
 
 async function init() {
   const user = await requireAuth();
@@ -23,8 +26,11 @@ async function init() {
           คำขอยืมอุปกรณ์ต้องผูกกับโครงการ<br>
           สร้างโครงการก่อนแล้วค่อยกลับมายืม
         </p>
-        <a href="/project-form/" class="btn btn-primary">สร้างโครงการ</a>
+        <button class="btn btn-primary" id="btn-create-proj-first">สร้างโครงการ</button>
       </div>`;
+    document.getElementById('btn-create-proj-first').addEventListener('click', () =>
+      openProjectModal(null, () => init())
+    );
     return;
   }
 
@@ -42,15 +48,10 @@ async function init() {
          </div>`
       : `<div class="form-group">
            <label class="form-label">โครงการ <span class="form-required">*</span></label>
-           <select class="form-select" name="project_id" id="project-select" required>
-             <option value="">-- เลือกโครงการ --</option>
-             ${projects.map(p => `
-               <option value="${h(p.id)}"
-                 data-start="${h(p.start_date)}" data-end="${h(p.end_date)}"
-                 ${p.id === selectedProjectId ? 'selected' : ''}>
-                 ${h(p.name)} (${formatDate(p.start_date)} – ${formatDate(p.end_date)})
-               </option>`).join('')}
-           </select>
+           ${renderSelect({
+             id: 'project-select', name: 'project_id', value: selectedProjectId, variant: 'form',
+             options: [['', '-- เลือกโครงการ --'], ...projects.map(p => [p.id, `${p.name} (${formatDate(p.start_date)} – ${formatDate(p.end_date)})`])],
+           })}
            ${sel ? `<span class="form-hint">ช่วงโครงการ: ${formatDate(sel.start_date)} → ${formatDate(sel.end_date)}</span>` : ''}
          </div>`;
 
@@ -63,13 +64,13 @@ async function init() {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">วันที่รับ <span class="form-required">*</span></label>
-          <input class="form-input" type="datetime-local" name="requested_pickup_datetime" id="pickup-input" required
-            ${sel ? `min="${sel.start_date}T00:00" max="${sel.end_date}T23:59"` : ''}>
+          ${renderPicker({ id: 'pickup-input', name: 'requested_pickup_datetime', withTime: true, restricted: true,
+            min: sel ? `${sel.start_date}T00:00` : '', max: sel ? `${sel.end_date}T23:59` : '' })}
         </div>
         <div class="form-group">
           <label class="form-label">วันที่คืน <span class="form-required">*</span></label>
-          <input class="form-input" type="datetime-local" name="requested_return_datetime" id="return-input" required
-            ${sel ? `min="${sel.start_date}T00:00" max="${sel.end_date}T23:59"` : ''}>
+          ${renderPicker({ id: 'return-input', name: 'requested_return_datetime', withTime: true, restricted: true,
+            min: sel ? `${sel.start_date}T00:00` : '', max: sel ? `${sel.end_date}T23:59` : '' })}
         </div>
       </div>`;
   }
@@ -88,13 +89,18 @@ async function init() {
       </form>
     </div>`;
 
-  function onProjectChange(e) {
-    const selectedId = e.target.value;
-    const body = document.getElementById('form-body');
-    body.innerHTML = renderForm(selectedId);
-    document.getElementById('project-select')?.addEventListener('change', onProjectChange);
+  function initPickers() {
+    initPicker('pickup-input');
+    initPicker('return-input');
   }
-  document.getElementById('project-select')?.addEventListener('change', onProjectChange);
+
+  function onProjectChange(selectedId) {
+    document.getElementById('form-body').innerHTML = renderForm(selectedId);
+    initSelect('project-select', onProjectChange);
+    initPickers();
+  }
+  initSelect('project-select', onProjectChange);
+  initPickers();
 
   document.getElementById('req-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -107,6 +113,11 @@ async function init() {
     const pickup    = fd.get('requested_pickup_datetime');
     const ret       = fd.get('requested_return_datetime');
     const sel       = projects.find(p => p.id === projectId);
+
+    if (!pickup || !ret) {
+      errEl.innerHTML = `<div class="alert alert-error">กรุณาเลือกวันที่รับและวันที่คืน</div>`;
+      return;
+    }
 
     if (sel) {
       const start   = new Date(sel.start_date + 'T00:00');

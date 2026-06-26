@@ -1,9 +1,20 @@
-import { getMe, postLogout, getNotifications } from './api.js';
+import { getMe, postLogout, getStatus } from './api.js';
 import { renderNavbar } from './ui.js';
 
 function redirectToLogin() {
   const error = new URLSearchParams(window.location.search).get('error');
   window.location.href = error ? `/login/?error=${encodeURIComponent(error)}` : '/login/';
+}
+
+// Kept so refreshNavStatus can re-render without re-fetching the user
+let _currentUser = null;
+
+function mountNavbar(user, status) {
+  renderNavbar(user, status);
+  document.getElementById('nav-logout-btn')?.addEventListener('click', async () => {
+    await postLogout().catch(() => {});
+    window.location.href = '/login/';
+  });
 }
 
 export async function requireAuth(roles = null) {
@@ -24,27 +35,26 @@ export async function requireAuth(roles = null) {
     return null;
   }
 
-  // First-login: prompt profile completion (skip when already on /profile/)
   if (user.nickname === null && !window.location.pathname.startsWith('/profile/')) {
     window.location.href = '/profile/?first=1';
     return null;
   }
 
-  let unread = 0;
-  try {
-    const data = await getNotifications(1, 1);
-    unread = data.unreadCount ?? data.pagination?.unread ?? 0;
-  } catch {}
-
-  // Clear any OAuth error hint so it doesn't linger after a successful login
+  _currentUser = user;
   localStorage.removeItem('oauth_pending');
 
-  renderNavbar(user, unread);
-
-  document.getElementById('nav-logout-btn')?.addEventListener('click', async () => {
-    await postLogout().catch(() => {});
-    window.location.href = '/login/';
-  });
+  let status = {};
+  try { status = await getStatus(); } catch {}
+  mountNavbar(user, status);
 
   return user;
+}
+
+// Call after any action that might change status counts (e.g. submit/process a request)
+export async function refreshNavStatus() {
+  if (!_currentUser) return;
+  try {
+    const status = await getStatus();
+    mountNavbar(_currentUser, status);
+  } catch {}
 }

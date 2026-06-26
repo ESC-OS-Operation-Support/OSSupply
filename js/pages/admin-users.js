@@ -1,6 +1,9 @@
 import { requireAuth } from '../auth.js';
 import { getUsers, updateUserRole, setUserStatus } from '../api.js';
-import { h } from '../ui.js';
+import { h, showToast, showConfirm } from '../ui.js';
+import { renderSelect, initSelect } from '../select.js';
+
+const ROLE_OPTS = [['user', 'ผู้ใช้'], ['staff', 'เจ้าหน้าที่'], ['admin', 'ผู้ดูแล']];
 
 async function init() {
   const me = await requireAuth(['admin']);
@@ -14,12 +17,7 @@ async function init() {
     app.innerHTML = `
       <div class="page-header">
         <h1 class="page-title">จัดการผู้ใช้งาน</h1>
-        <select class="filter-select" id="role-filter">
-          <option value="">ทุกบทบาท</option>
-          <option value="user">ผู้ใช้</option>
-          <option value="staff">เจ้าหน้าที่</option>
-          <option value="admin">ผู้ดูแล</option>
-        </select>
+        ${renderSelect({ id: 'role-filter', value: roleFilter, options: [['', 'ทุกบทบาท'], ...ROLE_OPTS] })}
       </div>
       <div class="table-wrap">
         <table class="data-table">
@@ -42,11 +40,7 @@ async function init() {
                 </td>
                 <td style="font-size:.85rem">${h(u.email)}</td>
                 <td>
-                  <select class="role-select" data-uid="${h(u.id)}" ${u.id === me.id ? 'disabled title="ไม่สามารถเปลี่ยนบทบาทของตัวเองได้"' : ''}>
-                    <option value="user"  ${u.role === 'user'  ? 'selected' : ''}>ผู้ใช้</option>
-                    <option value="staff" ${u.role === 'staff' ? 'selected' : ''}>เจ้าหน้าที่</option>
-                    <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>ผู้ดูแล</option>
-                  </select>
+                  ${renderSelect({ id: `cs-role-${u.id}`, value: u.role, options: ROLE_OPTS, variant: 'inline', disabled: u.id === me.id })}
                 </td>
                 <td>
                   ${u.is_active === 1
@@ -65,26 +59,25 @@ async function init() {
         </table>
       </div>`;
 
-    document.getElementById('role-filter').value = roleFilter;
-    document.getElementById('role-filter').addEventListener('change', e => renderPage(e.target.value));
+    initSelect('role-filter', v => renderPage(v));
 
-    document.querySelectorAll('.role-select').forEach(sel => {
-      sel.addEventListener('change', async e => {
-        try { await updateUserRole(sel.dataset.uid, e.target.value); }
-        catch (err) { alert(err.message); sel.value = sel.dataset.prev; }
-        sel.dataset.prev = e.target.value;
+    users.forEach(u => {
+      if (u.id === me.id) return;
+      initSelect(`cs-role-${u.id}`, async value => {
+        try { await updateUserRole(u.id, value); showToast('เปลี่ยนบทบาทสำเร็จ'); }
+        catch (err) { alert(err.message); await renderPage(roleFilter); }
       });
-      sel.dataset.prev = sel.value;
     });
 
     document.querySelectorAll('.do-toggle-status').forEach(btn => {
       btn.addEventListener('click', async () => {
         const isActive = btn.dataset.active === '1';
         const label    = isActive ? 'ระงับ' : 'เปิดใช้งาน';
-        if (!confirm(`ต้องการ${label}ผู้ใช้นี้?`)) return;
+        if (!await showConfirm(`ต้องการ${label}ผู้ใช้นี้?`, { danger: true })) return;
         try {
           await setUserStatus(btn.dataset.uid, !isActive);
-          await renderPage(document.getElementById('role-filter').value);
+          showToast(isActive ? 'ระงับผู้ใช้แล้ว' : 'เปิดใช้งานผู้ใช้แล้ว');
+          await renderPage(roleFilter);
         } catch (err) { alert(err.message); }
       });
     });

@@ -1,6 +1,7 @@
 import { requireAuth } from '../auth.js';
 import { getItems, getItemCategories, photoUrl } from '../api.js';
 import { h } from '../ui.js';
+import { renderSelect, initSelect } from '../select.js';
 
 const PLACEHOLDER_SVG = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`;
 
@@ -30,6 +31,7 @@ async function init() {
           <div class="item-card-qty">
             พร้อมใช้: <span class="qty-available">${item.available_quantity}</span>${unitLabel} / ${item.total_quantity}${unitLabel}
           </div>
+          <div class="item-card-id mono">#${h(String(item.id).slice(0, 8))}</div>
         </div>
       </a>`;
   }
@@ -94,10 +96,7 @@ async function init() {
       <h1 class="page-title">อุปกรณ์ทั้งหมด</h1>
       <div class="filter-row">
         <input class="filter-select search-input" id="search-input" placeholder="ค้นหาชื่ออุปกรณ์..." autocomplete="off">
-        <select class="filter-select" id="cat-filter">
-          <option value="">ทุกหมวดหมู่</option>
-          ${categories.map(c => `<option value="${h(c)}">${h(c)}</option>`).join('')}
-        </select>
+        ${renderSelect({ id: 'cat-filter', value: '', options: [['', 'ทุกหมวดหมู่'], ...categories.map(c => [c, c])] })}
       </div>
     </div>
     <div id="items-container"></div>`;
@@ -113,11 +112,7 @@ async function init() {
     }, 300);
   });
 
-  document.getElementById('cat-filter').addEventListener('change', e => {
-    currentCategory = e.target.value;
-    currentPage     = 1;
-    load();
-  });
+  initSelect('cat-filter', v => { currentCategory = v; currentPage = 1; load(); });
 }
 
 init();

@@ -55,6 +55,48 @@ export function showError(msg) {
   setTimeout(() => el.remove(), 5000);
 }
 
+// Fixed-position toast that auto-dismisses
+export function showToast(msg, type = 'success') {
+  let stack = document.getElementById('toast-stack');
+  if (!stack) {
+    stack = document.createElement('div');
+    stack.id = 'toast-stack';
+    stack.className = 'toast-stack';
+    document.body.appendChild(stack);
+  }
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  stack.appendChild(t);
+  setTimeout(() => {
+    t.style.transition = 'opacity .2s';
+    t.style.opacity = '0';
+    setTimeout(() => t.remove(), 220);
+  }, 2500);
+}
+
+// Custom confirm dialog — returns Promise<boolean>
+export function showConfirm(message, { subtext = '', confirmText = 'ยืนยัน', cancelText = 'ยกเลิก', danger = false } = {}) {
+  return new Promise(resolve => {
+    const el = document.createElement('div');
+    el.className = 'modal-overlay confirm-overlay';
+    el.innerHTML = `
+      <div class="modal-box confirm-box">
+        <div class="confirm-msg">${h(message)}</div>
+        ${subtext ? `<div class="confirm-sub">${h(subtext)}</div>` : ''}
+        <div class="confirm-actions">
+          <button class="btn btn-secondary confirm-cancel">${h(cancelText)}</button>
+          <button class="btn ${danger ? 'btn-danger' : 'btn-primary'} confirm-ok">${h(confirmText)}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+    const done = (result) => { el.remove(); resolve(result); };
+    el.querySelector('.confirm-ok').addEventListener('click', () => done(true));
+    el.querySelector('.confirm-cancel').addEventListener('click', () => done(false));
+    el.addEventListener('click', e => { if (e.target === el) done(false); });
+  });
+}
+
 // Render the footer (idempotent — only inserts once)
 function renderFooter() {
   if (document.getElementById('site-footer')) return;
@@ -108,12 +150,24 @@ function renderFooter() {
 }
 
 // Render the navbar
-export function renderNavbar(user, unread = 0) {
+// status: { unread_notifications, pending_requests, pending_returns, overdue_requests }
+export function renderNavbar(user, status = {}) {
   const root = document.getElementById('navbar-root');
   if (!root || !user) return;
   const seg     = '/' + (window.location.pathname.split('/').filter(Boolean)[0] || '');
   const active  = (path) => seg === path ? 'active' : '';
   const isStaff = user.role === 'staff' || user.role === 'admin';
+
+  const unread     = status.unread_notifications ?? 0;
+  const pendingReq = status.pending_requests      ?? 0;
+  const pendingRet = status.pending_returns       ?? 0;
+  const overdue    = status.overdue_requests      ?? 0;
+  const reqTotal   = pendingReq + overdue;
+
+  function adminBadge(count, danger = false) {
+    if (!count) return '';
+    return `<span class="nav-admin-badge${danger ? ' badge-danger' : ''}">${count > 99 ? '99+' : count}</span>`;
+  }
 
   root.innerHTML = `
     <nav class="nav">
@@ -131,20 +185,13 @@ export function renderNavbar(user, unread = 0) {
           <a href="/contact/"    class="nav-link ${active('/contact')}">Contact Us</a>
           ${isStaff ? `
             <span class="nav-divider"></span>
-            <a href="/admin-requests/" class="nav-link nav-link-admin ${active('/admin-requests')}">คำขอ</a>
-            <a href="/admin-returns/"  class="nav-link nav-link-admin ${active('/admin-returns')}">การคืน</a>
+            <a href="/admin-requests/" class="nav-link nav-link-admin ${active('/admin-requests')}">คำขอ${adminBadge(reqTotal, overdue > 0)}</a>
+            <a href="/admin-returns/"  class="nav-link nav-link-admin ${active('/admin-returns')}">การคืน${adminBadge(pendingRet)}</a>
             <a href="/admin-items/"    class="nav-link nav-link-admin ${active('/admin-items')}">คลัง</a>
             ${user.role === 'admin' ? `<a href="/admin-users/" class="nav-link nav-link-admin ${active('/admin-users')}">ผู้ใช้</a>` : ''}
           ` : ''}
         </div>
         <div class="nav-right">
-          <a href="/profile/" class="nav-profile-link${seg === '/profile' ? ' active' : ''}">
-            ${user.avatar_url
-              ? `<img src="${h(user.avatar_url)}" alt="${h(user.name)}" class="nav-avatar">`
-              : `<div class="nav-avatar-placeholder">${h(user.name.charAt(0).toUpperCase())}</div>`
-            }
-            <span class="nav-profile-name">${h(user.name)}</span>
-          </a>
           <a href="/notifications/" class="nav-bell${seg === '/notifications' ? ' active' : ''}" title="การแจ้งเตือน">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -152,6 +199,13 @@ export function renderNavbar(user, unread = 0) {
             </svg>
             ${unread > 0 ? `<span class="nav-notif-dot">${unread > 99 ? '99+' : unread}</span>` : ''}
             <span class="nav-bell-label">การแจ้งเตือน</span>
+          </a>
+          <a href="/profile/" class="nav-profile-link${seg === '/profile' ? ' active' : ''}">
+            ${user.avatar_url
+              ? `<img src="${h(user.avatar_url)}" alt="${h(user.name)}" class="nav-avatar">`
+              : `<div class="nav-avatar-placeholder">${h(user.name.charAt(0).toUpperCase())}</div>`
+            }
+            <span class="nav-profile-name">${h(user.name)}</span>
           </a>
           <button class="nav-logout" id="nav-logout-btn">ออกจากระบบ</button>
         </div>
@@ -162,11 +216,12 @@ export function renderNavbar(user, unread = 0) {
 }
 
 // Open a modal (appends to #modal-root, returns close function)
-export function openModal(titleText, bodyHtml) {
+// Options: { wide: true } expands to 580px for forms with two-column rows
+export function openModal(titleText, bodyHtml, { wide = false } = {}) {
   const root = document.getElementById('modal-root');
   root.innerHTML = `
     <div class="modal-overlay" id="modal-overlay">
-      <div class="modal-box">
+      <div class="modal-box${wide ? ' modal-box-wide' : ''}">
         <div class="modal-title">${h(titleText)}</div>
         ${bodyHtml}
       </div>

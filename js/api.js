@@ -30,6 +30,9 @@ const api = {
 
 export function photoUrl(key) { return `${BASE}/upload/photo/${key}`; }
 
+// Status (unread notifications + admin/staff counters in one round-trip)
+export const getStatus = () => api.get('/status');
+
 // Auth
 export const getMe     = ()    => api.get('/auth/me');
 export const postLogout = ()   => api.post('/auth/logout');
@@ -62,14 +65,17 @@ export const deleteProject  = (id)        => api.delete(`/projects/${id}`);
 
 export const addProjectMember    = (id, data)   => api.post(`/projects/${id}/members`, data);
 export const removeProjectMember = (id, userId) => api.delete(`/projects/${id}/members/${userId}`);
+export const transferOwnership   = (id, userId) => api.patch(`/projects/${id}/transfer-ownership`, { user_id: userId });
 export const searchUsers         = (q)          => { const p = new URLSearchParams({ limit: 10 }); if (q) p.set('q', q); return api.get('/users/search?' + p); };
 
 // Requests
 export const getRequests       = (status)       => api.get(`/requests${status ? '?status=' + status : ''}`);
 export const getRequest        = (id)           => api.get(`/requests/${id}`);
 export const createRequest     = (data)         => api.post('/requests', data);
+export const updateRequest     = (id, data)     => api.patch(`/requests/${id}`, data);
 export const addRequestItem    = (id, data)     => api.post(`/requests/${id}/items`, data);
 export const removeRequestItem = (id, itemId)   => api.delete(`/requests/${id}/items/${itemId}`);
+export const patchRequestItem  = (id, itemId, data) => api.patch(`/requests/${id}/items/${itemId}`, data);
 export const submitRequest     = (id)           => api.post(`/requests/${id}/submit`);
 export const cancelRequest     = (id)           => api.patch(`/requests/${id}/cancel`);
 export const rejectRequest     = (id, data)     => api.patch(`/requests/${id}/reject`, data);

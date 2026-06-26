@@ -1,6 +1,7 @@
 import { requireAuth } from '../auth.js';
 import { getItem, photoUrl } from '../api.js';
 import { h } from '../ui.js';
+import { openRequestModal } from '../request-modal.js';
 
 async function init() {
   const user = await requireAuth();
@@ -43,11 +44,13 @@ async function init() {
         </div>
         <div style="padding-top:1.25rem;border-top:1px solid var(--border);margin-top:.25rem">
           ${avail
-            ? `<a href="/new-request/?item_id=${h(id)}" class="btn btn-primary">ยืมอุปกรณ์นี้</a>`
+            ? `<button class="btn btn-primary" id="btn-borrow-item">ยืมอุปกรณ์นี้</button>`
             : `<button class="btn btn-primary" disabled style="opacity:.45;cursor:default">ไม่มีในสต๊อก</button>`}
           <a href="/items/" class="btn btn-secondary" style="margin-left:.5rem">← กลับสต๊อก</a>
         </div>
       </div>
     </div>`;
+
+  document.getElementById('btn-borrow-item')?.addEventListener('click', () => openRequestModal({ itemId: id }));
 }
 init();

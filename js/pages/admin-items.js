@@ -1,6 +1,7 @@
 import { requireAuth } from '../auth.js';
-import { getItems, getItemCategories, createItem, updateItem, deleteItem } from '../api.js';
-import { h, openModal } from '../ui.js';
+import { getItems, getItemCategories, createItem, updateItem, deleteItem, photoUrl } from '../api.js';
+import { h, openModal, showToast, showConfirm } from '../ui.js';
+import { renderSelect, initSelect } from '../select.js';
 
 async function init() {
   const user = await requireAuth(['staff', 'admin']);
@@ -107,6 +108,7 @@ async function init() {
         if (isEdit) await updateItem(item.id, data);
         else        await createItem(data);
         close();
+        showToast(isEdit ? 'แก้ไขอุปกรณ์สำเร็จ' : 'เพิ่มอุปกรณ์สำเร็จ');
         await loadItems();
       } catch (err) {
         document.getElementById('modal-error').innerHTML = `<div class="alert alert-error">${h(err.message)}</div>`;
@@ -130,16 +132,25 @@ async function init() {
         <table class="data-table">
           <thead>
             <tr>
-              <th>ชื่อ</th><th>หมวดหมู่</th><th>หน่วย</th><th>ที่เก็บ</th>
+              <th style="width:48px"></th>
+              <th>ชื่อ / ID</th><th>หมวดหมู่</th><th>หน่วย</th><th>ที่เก็บ</th>
               <th>ทั้งหมด</th><th>พร้อมใช้</th><th>ซ่อม</th><th>การดำเนินการ</th>
             </tr>
           </thead>
           <tbody>
             ${items.length === 0
-              ? `<tr><td colspan="8" class="empty-text">ไม่พบอุปกรณ์</td></tr>`
+              ? `<tr><td colspan="9" class="empty-text">ไม่พบอุปกรณ์</td></tr>`
               : items.map(item => `
                 <tr class="${item.is_active === 0 ? 'item-inactive' : ''}">
-                  <td><span style="font-weight:600">${h(item.name)}</span></td>
+                  <td style="padding:0.35rem 0.5rem">
+                    ${item.image_r2_key
+                      ? `<img src="${photoUrl(item.image_r2_key)}" alt="${h(item.name)}" class="table-item-thumb">`
+                      : `<div class="table-item-thumb table-item-thumb-ph"></div>`}
+                  </td>
+                  <td>
+                    <span style="font-weight:600">${h(item.name)}</span>
+                    <div class="mono" style="font-size:.72rem;color:var(--text-muted);margin-top:.15rem">#${h(String(item.id).slice(0, 8))}</div>
+                  </td>
                   <td>${h(item.category || '—')}</td>
                   <td>${h(item.unit || '—')}</td>
                   <td><span class="mono" style="font-size:.82rem">${h(item.stock_location || '—')}</span></td>
@@ -176,8 +187,8 @@ async function init() {
 
     container.querySelectorAll('.do-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm(`ลบ "${btn.dataset.name}"?`)) return;
-        try { await deleteItem(btn.dataset.id); await loadItems(); }
+        if (!await showConfirm(`ลบ "${btn.dataset.name}"?`, { danger: true })) return;
+        try { await deleteItem(btn.dataset.id); showToast('ลบอุปกรณ์แล้ว'); await loadItems(); }
         catch (err) { alert(err.message); }
       });
     });
@@ -190,10 +201,7 @@ async function init() {
     </div>
     <div class="filter-row" style="margin-bottom:1.25rem">
       <input class="filter-select search-input" id="search-input" placeholder="ค้นหาชื่ออุปกรณ์..." autocomplete="off">
-      <select class="filter-select" id="cat-filter">
-        <option value="">ทุกหมวดหมู่</option>
-        ${categories.map(c => `<option value="${h(c)}">${h(c)}</option>`).join('')}
-      </select>
+      ${renderSelect({ id: 'cat-filter', value: '', options: [['', 'ทุกหมวดหมู่'], ...categories.map(c => [c, c])] })}
     </div>
     <div id="items-container"></div>`;
 
@@ -210,11 +218,7 @@ async function init() {
     }, 300);
   });
 
-  document.getElementById('cat-filter').addEventListener('change', e => {
-    currentCategory = e.target.value;
-    currentPage     = 1;
-    loadItems();
-  });
+  initSelect('cat-filter', v => { currentCategory = v; currentPage = 1; loadItems(); });
 }
 
 init();

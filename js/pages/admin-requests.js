@@ -1,6 +1,7 @@
 import { requireAuth } from '../auth.js';
 import { getRequests } from '../api.js';
 import { h, statusBadge, formatDateTime } from '../ui.js';
+import { renderSelect, initSelect } from '../select.js';
 
 const STATUS_OPTS = [
   ['pending', 'รอดำเนินการ'], ['processing', 'กำลังดำเนินการ'],
@@ -22,9 +23,7 @@ async function init() {
     app.innerHTML = `
       <div class="page-header">
         <h1 class="page-title">คำขอทั้งหมด</h1>
-        <select class="filter-select" id="status-filter">
-          ${STATUS_OPTS.map(([v, l]) => `<option value="${v}" ${v === status ? 'selected' : ''}>${l}</option>`).join('')}
-        </select>
+        ${renderSelect({ id: 'status-filter', value: status, options: STATUS_OPTS })}
       </div>
       ${requests.length === 0 ? '<p class="empty-text">ไม่มีคำขอในสถานะนี้</p>' : `
       <div class="table-wrap">
@@ -49,7 +48,7 @@ async function init() {
         </table>
       </div>`}`;
 
-    document.getElementById('status-filter').addEventListener('change', e => renderPage(e.target.value));
+    initSelect('status-filter', v => renderPage(v));
   }
 
   await renderPage();
